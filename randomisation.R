@@ -56,8 +56,6 @@ while(iteration > 0){
 
 
 
-
-
 get_mean_nearest_neighbour <- function(trees, lat = 3, lon = 4){
     N_trees  <- dim(trees)[1];
     tree_lat <- trees[,lat];
