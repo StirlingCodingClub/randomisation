@@ -215,7 +215,87 @@ With this procedure, we have therefore sampled `r cars_sampled[1]` and `r cars_s
 <a name="rand_h">Randomisation for hypothesis testing</a>
 ================================================================================
 
+The ability to generate random values and sample randomly from a vector of numbers can be used for statistical hypothesis testing. To demonstrate this, I will use the [Bumpus data set](https://www.fieldmuseum.org/blog/hermon-bumpus-and-house-sparrows) of House Sparrow (*Passer domesticus*) survival, which was also used in the Stirling Coding Club [notes on writing manuscripts in Rmarkdown](https://stirlingcodingclub.github.io/Manuscripts_in_Rmarkdown/Rmarkdown_notes.html). The data set comes from Hermon Bumpus, who collected House Sparrows after a particularly severe storm in Rhode Island, USA to measure the morphological traits of birds who survived and perished [@Bumpus1898]. 
 
+```{r}
+birds <- read.csv("data/Bumpus_data.csv");
+```
+
+The first few rows look like the below.
+
+```{r, echo = FALSE}
+library(knitr);
+kable(head(birds));
+```
+
+Suppose we hypothesis that sparrows that survive will have a lower mass than sparrows that perish. If we want to do a simple test to see whether or not the body weight (`wgt`) of living sparrows is lower than that of dead sparrows, then we could use the base R function `t.test` as follows.
+
+```{r}
+bird_t_test <- t.test(birds[,5] ~ birds[,2], alternative = "less");
+```
+
+In the above, `birds[,5]` specifies the column of the response variable (sparrow weight) as a function of `birds[,2]` (`alive` versus `dead`). Specifying `alternative = "less"` indicates that our alternative hypothesis is that the true difference in the means is less than zero (i.e., $\mu_{alive} - \mu_{dead} < 0$). The difference between the estimated means is `r as.numeric(bird_t_test$estimate[1])` $-$ `r as.numeric(bird_t_test$estimate[2])` $=$ `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. As indicated from the p-value shown above, if we assume that the null hypothesis is true (i.e., sparrows that lived do *not* have less mass than sparrows that died), then the probability of getting a difference in mass this low or lower is `r bird_t_test$p.value`. 
+
+The use of a simple t-test is sufficient for the above question; our data set is fairly large (`r sum(birds[,2] == "alive")` living sparrows and `r sum(birds[,2] == "dead")` dead sparrows), and there is no reason to believe the statistical assumptions of the t-test are being violated. Nevertheless, we can use resampling to test the same null hypothesis in a slightly different way, and one in which is not dependent upon the standard t-test assumptions (e.g., normality). Consider the null hypothesis again, that the true body mass of living sparrows is not less than the true body mass of dead sparrows In the t-test, we assume this null hypothesis and ask what is the probability of getting a value of $\hat\mu_{alive} - \hat\mu_{dead}$ as low as we did (note the hats above $\mu$ are used to indicate the observed *estimate* of the mean rather than the *true* mean). 
+
+**A different way to state the null hypothesis of the t-test is that *membership to the group 'alive' has no effect on whether or not the difference between 'alive' and 'dead' sparrows will be negative*.** In other words, we can randomly shuffle group membership and not expect the difference between $\hat\mu_{alive} - \hat\mu_{dead}$ to be much different from the difference in the actual observed data set. If we shuffle group membership many times, we can generate a distribution of differences between living and dead sparow body masses that would be expected *if group membership were random* (i.e., if sparrow status as alive or dead were random with respect to body mass). We can then compare this distribution with the actual observed difference from the data set to test what the probability of getting such a low value of $\hat\mu_{alive} - \hat\mu_{dead}$ would be if group membership were random -- this comparison **is a p-value**, just derived in a different way with slightly different assumptions. It is, however, the probability of getting a value as extreme as the one observed *given that the null hypothesis is true*. Below is a simple example of how to recreate the null distribution and compare it to the observed difference between group means to get a p-value.
+
+```{r}
+iter    <- 9999;          # Total iterations (+1 for observed data = 10k)
+diff    <- NULL;          # To add difference between groups
+N_birds <- dim(birds)[1]; # Total number of birds
+for(i in 1:iter){   
+    bird_samp   <- sample(x = birds[,2], size = N_birds, replace = FALSE);
+    samp_alive  <- which(bird_samp == "alive");
+    samp_dead   <- which(bird_samp == "dead");
+    mn_samp_a   <- mean(birds[samp_alive, 5]);
+    mn_samp_d   <- mean(birds[samp_dead, 5]);
+    diff[i]     <- mn_samp_a - mn_samp_d;
+}
+```
+
+Within the `for` loop above, what I have done is randomly shuffle the "alive" versus "dead" column from the `birds` data set. Hence, `bird_samp` is a vector of group membership that is random with respect to sparrow body mass in column 5 of `birds`. The `which` functions within the loop find which sparrows are randomly assigned to be "alive" and "dead". The following two lines get the mean values of body mass for each randomly generated group. And the last line within the `for` loop gets the difference between these means.
+
+Note that we could have equally well calculated a t-statistic, or even the median between groups, rather than group means [@Manly2007]. What matters is that we are comparing observed difference between groups with equivalent differences created from the randomly generated distribution. All the randomly generated values are now stored in `diff`, so we can plot them with a histogram to see the null distribution.
+
+```{r}
+xlabel <- expression( paste("Random group mean difference (", 
+                            mu[alive] - mu[dead], ")" )
+                      ); # Gets the Greek mu with subscripts
+hist(diff, xlab = xlabel, col = "grey", main = "", cex.lab = 1.5, 
+     cex.axis = 1.5, breaks = 20);
+```
+
+Recall that the actual observed difference was `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. This is quite far to the left of the above distribution. We can actually add an arrow indicating the observed value on the histogram using the code below.
+
+```{r, eval = FALSE}
+obs_alive <- which(birds[,2] == "alive");
+obs_dead  <- which(birds[,2] == "dead");
+obs_diff  <- mean(birds[obs_alive,5]) - mean(birds[obs_dead,5]); 
+arrows(x0 = obs_diff, x1 = obs_diff, y0 = 500, y1 = 10, lwd = 3, length = 0.1);
+```
+
+```{r, echo = FALSE}
+xlabel <- expression( paste("Random group mean difference (", 
+                            mu[alive] - mu[dead], ")" )
+                      ); # Gets the Greek mu with subscripts
+hist(diff, xlab = xlabel, col = "grey", main = "", cex.lab = 1.5, 
+     cex.axis = 1.5, breaks = 20);
+obs_alive <- which(birds[,2] == "alive");
+obs_dead  <- which(birds[,2] == "dead");
+obs_diff  <- mean(birds[obs_alive,5]) - mean(birds[obs_dead,5]); 
+arrows(x0 = obs_diff, x1 = obs_diff, y0 = 500, y1 = 10, lwd = 3, length = 0.1);
+```
+
+To get a p-value, we can simply count the number of values less than or equal to the observed `obs_diff` in our randomly generated distribution above, then divide by the total number of randomly generated (9999) and observed (1) differences.
+
+```{r}
+less_or_equal_obs <- sum(diff <= obs_diff) + 1;
+total_generated   <- length(diff) + 1;
+new_p_value       <- less_or_equal_obs / total_generated;
+```
+
+Using the randomisation method, we get a value of $P =$ `r new_p_value`. Note that this p-value would change slightly if we were to re-run the analysis, but not by much if a the number of times we resample is sufficiently high. Also note that the p-value we obtained after randomisation is quite close to the value obtained from the standard t-test, which was `r bird_t_test$p.value`. Conceptually, the two tests are doing the same thing -- assuming that the mean value of one group is not less than the mean value of another group, and asking what the probability is of getting such a low difference in means would be if this assumption were in fact true. This was a very basic example of a randomisation test in R, but I hope that it illustrates how useful randomisation for hypothesis testing can be. Randomising is highly flexible, and allows researchers to test hypotheses that might be otherwise difficult to address due to stastical assumptions of standard tests or peculariarites of specific data sets. It is, of course, important to carefully consider what needs to be randomised for a particular question of interest to ensure that the appropriate null distribution is generated.
 
 <a name="rand_b">Bootstrapping confidence intervals</a>
 ================================================================================
