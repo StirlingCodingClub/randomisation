@@ -215,7 +215,7 @@ With this procedure, we have therefore sampled `r cars_sampled[1]` and `r cars_s
 <a name="rand_h">Randomisation for hypothesis testing</a>
 ================================================================================
 
-The ability to generate random values and sample randomly from a vector of numbers can be used for statistical hypothesis testing. To demonstrate this, I will use the [Bumpus data set](https://www.fieldmuseum.org/blog/hermon-bumpus-and-house-sparrows) of House Sparrow (*Passer domesticus*) survival, which was also used in the Stirling Coding Club [notes on writing manuscripts in Rmarkdown](https://stirlingcodingclub.github.io/Manuscripts_in_Rmarkdown/Rmarkdown_notes.html). The data set comes from Hermon Bumpus, who collected House Sparrows after a particularly severe storm in Rhode Island, USA to measure the morphological traits of birds who survived and perished [@Bumpus1898]. 
+The ability to generate random values and sample randomly from a vector of numbers can be used for statistical hypothesis testing. To demonstrate this, I will use the [Bumpus data set](https://www.fieldmuseum.org/blog/hermon-bumpus-and-house-sparrows) of House Sparrow (*Passer domesticus*) survival, which was also used in the Stirling Coding Club [notes on writing manuscripts in Rmarkdown](https://stirlingcodingclub.github.io/Manuscripts_in_Rmarkdown/Rmarkdown_notes.html). A version of it can be viewed and downloaded [on GitHub](https://github.com/StirlingCodingClub/randomisation/blob/master/data/Bumpus_data.csv). The data set comes from Hermon Bumpus, who collected House Sparrows after a particularly severe storm in Rhode Island, USA to measure the morphological traits of birds who survived and perished [@Bumpus1898]. 
 
 ```{r}
 birds <- read.csv("data/Bumpus_data.csv");
@@ -266,7 +266,7 @@ hist(diff, xlab = xlabel, col = "grey", main = "", cex.lab = 1.5,
      cex.axis = 1.5, breaks = 20);
 ```
 
-Recall that the actual observed difference was `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. This is quite far to the left of the above distribution. We can actually add an arrow indicating the observed value on the histogram using the code below.
+Recall that the actual observed difference was `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. This is quite far to the left of the above distribution. We can add an arrow indicating the observed value on the histogram using the code below.
 
 ```{r, eval = FALSE}
 obs_alive <- which(birds[,2] == "alive");
