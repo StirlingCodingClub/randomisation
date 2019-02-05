@@ -1,7 +1,7 @@
 ---
 title: "Introduction to randomisation, bootstrap, and Mote Carlo methods in R"
 author: "Brad Duthie"
-date: "23 January 2019"
+date: "6 Februrary 2019"
 output: 
     html_document:
         code_folding: show
@@ -300,9 +300,59 @@ Using the randomisation method, we get a value of $P =$ `r new_p_value`. Note th
 <a name="rand_b">Bootstrapping confidence intervals</a>
 ================================================================================
 
+We can apply the randomisation to generating confidence intervals around some parameter value by resampling data with replacement. Recall the somewhat confusing frequentist definition of a confidence interval, that is an interval within which the parameter mean would be expected to be contained with some confidence if the population were repeatedly resampled. For example, for a 95\% confidence interval we would expect the mean to be observed within the lower and upper bounds 95\% of the time if we were to go out and re-sample from our population and re-calculate the interval bounds. Verbally, this is challenging to state, but the idea is well-reflected in the process of bootsrapping using resampling with replacement. The idea is that the distribution of values in the data represent the best information available on the distribution of the whole population of interest. Hence, to see what would happen if we were to re-sample from the whole population itself, we can sample with replacement from the collected data [@Manly2007]. 
 
-<a name="rand_b">Monte Carlo method for spatial data</a>
+To show a simple example of bootstrapping 95\% confidence intervals, I will again use the Bumpus data set. This time, however, I will focus on the whole data set of sparrows, not separating sparrows that are alive and those that are dead. The goal will be to generate 95\% bootstrapped confidence intervals for bird total length (`totlen`), which is found in column 3 of `birds`.
+
+The general idea will be to repeatedly resample a new column `totlen` from the already existing column of data, with replacement. In other words, with each resampling, we will make a new `totlen` column of the same length as the original `totlen`, but some of the values will be repeated while others will be ommitted due to the process of resampling with replacement. We then calculate the mean total sparrow length from the new column created by resampling. The standard deviation of the resampled means will estimate the standard error of the true mean, as if we were to have gone back out into the field and collected another set of sparrows and measured their lengths.
+
+```{r}
+iter            <- 10000;
+resampled_means <- NULL;
+N_birds         <- dim(birds)[1]; # Total number of birds
+for(i in 1:N_birds){
+    resampled_totlen   <- sample(x = birds[,3], size = N_birds, replace = TRUE);
+    mean_resample      <- mean(resampled_totlen);
+    resampled_means[i] <- mean_resample;
+}
+sd_resampled_means <- sd(resampled_means);
+```
+
+In the above loop, $`r iter`$ new data sets of `r N_birds` sparrow total lengths are generated with replacement to create `resampled_totlen`. The mean of these resampled sparrow total lengths is calculated and appended to `resampled_means`. Outside of the loop, the standard deviation of the `resampled_means` is calculated to be `r sd_resampled_means`. Again, this standard deviation estimates what the standard deviation of *estimated mean* values of sparrow total length would be if we were to go out and re-collect the same number of sparrows that Bumpus did. The standard deviation of means is, by definition, the standard error of the means, so we can use this standard deviation to calculate 95\% confidence intervals just as we would with the standard error of the original data. 
+
+$$\hat\mu_{len} - \sigma z_{\alpha/2} < \mu_{len} < \hat\mu_{len} - \sigma z_{\alpha/2}$$
+
+In the above, $\mu_{len}$ is the true mean total sparrow length, $\sigma$ is the standard deviation of the resampled means (`sd_resampled_means` in the code above), and $z_{\alpha/2}$ is the corresponding $z$ value from the standard normal distribution for which the probility exceeds $\alpha/2$ (for a 95\% confidence interval, this value is 1.96). Note again the hats above $\mu$ to differentiate the parameter estimate ($\hat\mu_{len}$) from the true parameter ($\mu_{len}$). We can then simply substitute $z_{\alpha/2} = 1.96$, $\sigma =$ `sd_resampled_means` $=$ `r sd_resampled_means`, and $\hat\mu_{len} =$ `mean(birds[,3])` $=$ `r mean(birds[,3])` to get the following 95\% confidence intervals.
+
+```{r}
+lower_95CI <- mean(birds[,3]) - 1.96 * sd_resampled_means;
+upper_95CI <- mean(birds[,3]) + 1.96 * sd_resampled_means;
+```
+
+This results in an estimated mean total bird length of `r mean(birds[,3])` with a lower 95\% confidence interval of `r lower_95CI` and an upper 95\% confidence interval of `r upper_95CI`. We can compare this with 95\% confidence intervals calculated in the standard way using standard errors from the song sparrow data set as follows. 
+
+$$\hat\mu_{len} - \frac{\sigma}{\sqrt{n}} z_{\alpha/2} < \mu_{len} < \hat\mu_{len} - \frac{\sigma}{\sqrt{n}} z_{\alpha/2}$$
+
+In the above, all that has changed is the $\sigma / \sqrt{n}$, which now is defined as the standard deviation of the observed sparrow total lengths (i.e., *not* the standard deviation of the means of all lengths from resampling, as above), divided by the square root of the total number of sparrows observed (i.e., `N_birds` in the code above). This results in the confidence intervals calculated below.
+
+```{r}
+lower_95CI_std <- mean(birds[,3]) - 1.96 * ( sd( birds[,3] / sqrt(N_birds) ) );
+upper_95CI_std <- mean(birds[,3]) + 1.96 * ( sd( birds[,3] / sqrt(N_birds) ) );
+```
+
+The standard method of bootsrapping results in the same estimated mean total bird length of `r mean(birds[,3])`, but with a lower 95\% confidence interval of `r lower_95CI_std` and an upper 95\% confidence interval of `r upper_95CI_std`. 
+
+There are several different methods of using bootstrapping to generate confidence intervals [@Manly2007]. My hope is that the above is enough to show the general logic of bootstrapping with resampling, along with a helpful example. **Note that means are not the only parameter values that can be bootstrapped to obtain confidence intervals**. By resampling data with replacement, confidence intervals can be generated around any number of parameter value estimates (e.g., variances, correlations, custom indices, etc.).
+
+
+<a name="rand_m">Monte Carlo method for spatial data</a>
 ================================================================================
+
+The previous two examples of [hypothesis testing](#rand_h) and [bootstrapping ](#rand_b) involved resampling from existing data sets to address a statistical question. Next, I will consider the case in which we address a null hypothesis whose distribution cannot be derived by sampling from the observed data. **The goal will be to test whether or not plants of one species are randomly distributed across a fixed sampling area.**
+
+The data set I will use includes locations of [Sonoran Desert rock fig](https://en.wikipedia.org/wiki/Ficus_petiolaris) trees (*Ficus petiolaris*) from a field site Baja, Mexico, which were mapped in the lab of [John Nason](https://www.eeob.iastate.edu/faculty/nason/). Fig trees have a fascinating ecology, with mutualistic and antagonistic interactions with accompanying species of obligately pollinating and parasitising [fig wasps](https://en.wikipedia.org/wiki/Fig_wasp). The locations of these fig trees were originally collected for a much different purpose from what I am using them for here, but they are useful for a simplified example of Monte Carlo methods as applied to spatial data.
+
+
 
 
 <a name="whatelse">Additional resources</a>
