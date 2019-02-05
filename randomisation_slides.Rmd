@@ -1,0 +1,31 @@
+---
+title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
+author: "Brad Duthie"
+date: "6 Februrary 2019"
+output:
+  beamer_presentation:
+    theme: "default"
+    colortheme: "default"
+    fonttheme: "default"
+  ioslides_presentation: default
+  slidy_presentation: default
+header-includes:
+- \usepackage{hyperref}
+- \usepackage{tikz}
+- \usepackage{caption}
+colorlinks: true
+linkcolor: blue
+urlcolor: blue
+---
+
+```{r, echo = FALSE}
+library(knitr);
+opts_chunk$set(echo = FALSE);
+```
+
+
+## First slide
+
+- Point 1
+- Point 2
+- Point 3

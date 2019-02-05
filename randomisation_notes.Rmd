@@ -1,5 +1,5 @@
 ---
-title: "Introduction to randomisation, bootstrap, and Mote Carlo methods in R"
+title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 author: "Brad Duthie"
 date: "6 Februrary 2019"
 output: 
