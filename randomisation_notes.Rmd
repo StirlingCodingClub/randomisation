@@ -27,18 +27,24 @@ Contents
 - [Randomisation for hypothesis testing](#rand_h)
 - [Bootstrapping confidence intervals](#rand_b)
 - [Monte Carlo method for spatial data](#rand_m)
+- [Conclusions](#conclusions)
 
 ********************************************************************************
 
 <a name="intro">Introduction: Randomisation and Monte Carlo</a>
 ================================================================================
 
+The R programming language has many built-in base functions for inferential statistics, and a growing library of [R packages](https://cran.r-project.org/web/packages/) continues to add to the list of functions available in R for performing specific statistical analyses. Users of R, however, need not be restricted to these functions; the flexibility of programming allows us to write our own code to address specific statistical questions and tailor our analyses to our own data. The freedom to code our own analyses makes it possible to apply statistical methods that would otherwise by very difficult to use. 
+
+In the preface to his book, "Randomization, Bootstrap, and Monte Carlo Methods in Biology", @Manly2007 emphasises how twentieth century advances in computation power have made the titular methods of his book possible for researchers. In these notes, I will introduce some basic examples of how to use randomisation, bootstrap, and Monte Carlo methods in the R programming language. Throughout these examples, I hope to also show how the process of randomisation and resampling applied in these methods can also make the logic of null hypothesis testing in frequentist statistics more intuitive. I have especially tried to do this with respect to p-values and confidence intervals, which are often misunderstood.
+
+I will begin by explaining key R functions for generating random values. Next, I will show how a t-test can be performed using randomisation, followed by the generation of confidence intervals by sampling with replacement. Finally, I will show how a Monte Carlo test can be written in R to test whether or not a population of plants is aggregated within a fixed area.
+
 
 <a name="rand_r">Random number generation in R: key functions</a>
 ================================================================================
 
-
-The objective of these notes is to help the reader get started with using randomisation, bootstrap, and Monte Carlo methods in R.
+There are several functions in R that generate random numbers from particular distributions, or sample elements from vectors or lists. Below, I introduce some of these functions and show how to use them.
 
 <a name="rnorm">**Sampling from a normal distribution**</a>
 
@@ -64,7 +70,7 @@ hist(rand_norms_10000, xlab = "Random value (X)", col = "grey",
 
 <a name="runif">**Sampling from a uniform distribution**</a>
 
-Like the `rnorm` function, the `runif` function returns some number (`n`) of random numbers, but from a [uniform distribution](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) with between a range of $a$ (`min`) and $b$ (`max`) such that $X\sim\mathcal U(a,b)$, where $-\infty < a < b < \infty$. The default is to draw from a standard uniform distribution (i.e., $a = 0$ and $b = 1$).
+Like the `rnorm` function, the `runif` function returns some number (`n`) of random numbers, but from a [uniform distribution](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) with a range from $a$ (`min`) to $b$ (`max`) such that $X\sim\mathcal U(a,b)$, where $-\infty < a < b < \infty$. The default is to draw from a standard uniform distribution (i.e., $a = 0$ and $b = 1$).
 
 ```{r}
 rand_unifs_10 <- runif(n = 10, min = 0, max = 1);
@@ -93,7 +99,7 @@ coin_flips <- rbinom(n = 1, size = 1000, prob = 0.5);
 print(coin_flips);
 ```
 
-The above result shows that the coin came up heads `r coin_flips` times. Note, however, the (required) argument `n` above. This allows the user to set the number of sequences to run. In other words, if we set `n = 2`, then this could simulate the flipping of a fair coin 1000 times once to see how many times heads comes up, then repeating the whole process to see how many times heads comes up again.
+The above result shows that the coin came up heads `r coin_flips` times. Note, however, the (required) argument `n` above. This allows the user to set the number of sequences to run. In other words, if we set `n = 2`, then this could simulate the flipping of a fair coin 1000 times once to see how many times heads comes up, then repeating the whole process to see how many times heads comes up again (or, if it is more intuitive, the flipping of two separate fair coins 1000 times).
 
 ```{r}
 coin_flips_2 <- rbinom(n = 2, size = 1000, prob = 0.5);
@@ -122,12 +128,12 @@ flips_10 <- rbinom(n = 10, size = 1, prob = 0.5);
 print(flips_10);
 ```
 
-In the above, there are `n = 10` trials, but each trial consists of only a single coin flip (`size = 1`). But can equally well interpret the results as a series of `n` coin flips that come up either heads (`1`) or tails (`0`). This interpretation can be especially useful to write code that randomly decides whether some event will happen (`1`) or not (`0`) with some probability `prob`.
+In the above, there are `n = 10` trials, but each trial consists of only a single coin flip (`size = 1`). But we can equally well interpret the results as a series of `n` coin flips that come up either heads (`1`) or tails (`0`). This latter interpretation can be especially useful to write code that randomly decides whether some event will happen (`1`) or not (`0`) with some probability `prob`.
 
 
 <a name="rpois">**Sampling from a poisson distribution**</a>
 
-Many processes in biology can be described by a [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). A Poisson process describes events happening with some given probability over an area of time or space such that $X\sim Poisson(\lambda)$, where the rate parameter $\lambda$ is both the mean and variance of the Poisson distribution (note $\lambda > 0$). Sampling from a Poisson distribution can be done in R with `rpois`, which takes only two arguments specifying the number of values to be returned (`n`) and the rate parameter (`lambda`).
+Many processes in biology can be described by a [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). A Poisson process describes events happening with some given probability over an area of time or space such that $X\sim Poisson(\lambda)$, where the rate parameter $\lambda$ is both the mean and variance of the Poisson distribution (note that by definition, $\lambda > 0$). Sampling from a Poisson distribution can be done in R with `rpois`, which takes only two arguments specifying the number of values to be returned (`n`) and the rate parameter (`lambda`).
 
 ```{r}
 rand_poissons <- rpois(n = 10, lambda = 1);
@@ -146,27 +152,27 @@ hist(rand_poissons_10000, xlab = "Random value (X)", col = "grey",
 
 <a name="sample">**Sampling values from a vector**</a>
 
-Sometimes it is useful to sample a set of values from a vector or list. The function `sample` is a very flexible function in R for sampling any group (`x`) of numbers or elements from some structure in R according to some set probabilities (`prob`). Elements can be sampled from `x` some number of times (`size`) with or without replacement (`replace`), though an error will be returned if the `size` of the sample is larger than `x` but `replace = FALSE` (default). To start out simple, suppose we want to ask R to pick a random number from one to ten with equal probability.
+Sometimes it is useful to sample a set of values from a vector or list. The R function `sample` is very flexible for sampling a subset of numbers or elements from some structure (`x`) in R according to some set probabilities (`prob`). Elements can be sampled from `x` some number of times (`size`) with or without replacement (`replace`), though an error will be returned if the `size` of the sample is larger than `x` but `replace = FALSE` (default). To start out simple, suppose we want to ask R to pick a random number from one to ten with equal probability.
 
 ```{r}
 rand_number_1 <- sample(x = 1:10, size = 1);
 ```
 
-The above code will set `rand_number_1` to a randomly selected value, in this case `r rand_number_1`. Because we have not specified a probability vector `prob`, the function assumes that every element in `1:10` is sampled with equal probability. We can increase the size to `10` below.
+The above code will set `rand_number_1` to a randomly selected value, in this case `r rand_number_1`. Because we have not specified a probability vector `prob`, the function assumes that every element in `1:10` is sampled with equal probability. We can increase the `size` of the sample to `10` below.
 
 ```{r}
 rand_number_10 <- sample(x = 1:10, size = 10);
 print(rand_number_10);
 ```
 
-Note that all numbers from 1 to 10 have been sampled, though in a random order. This is becaues the default is to sample with replacement, meaning that once a number has been sampled for the first element in `rand_number_10`, it is no longer available to be sampled again. To change this and allow for sampling with replacement, we can change the default.
+Note that all numbers from 1 to 10 have been sampled, but in a random order. This is becaues the default is to sample with replacement, meaning that once a number has been sampled for the first element in `rand_number_10`, it is no longer available to be sampled again. To change this and allow for sampling with replacement, we can change the default.
 
 ```{r}
 rand_number_10_r <- sample(x = 1:10, size = 10, replace = TRUE);
 print(rand_number_10_r);
 ```
 
-Note that the numbers {`r as.numeric(names(which(table(rand_number_10_r) > 1)))`} are now repeated in the set of randomly sampled values above. We can also specify the probability of sampling each element, with the obvious condition that these probabilities need to sum to 1. Below shows an example in which the numbers 1-5 are sampled with a probability of 0.05, while the numbers 6-10 are sampled with a probability of 0.15, thereby biasing sampling toward larger numbers.
+Note that the numbers {`r as.numeric(names(which(table(rand_number_10_r) > 1)))`} are now repeated in the set of randomly sampled values above. We can also specify the probability of sampling each element, with the condition that these probabilities need to sum to 1. Below shows an example in which the numbers 1-5 are sampled with a probability of 0.05, while the numbers 6-10 are sampled with a probability of 0.15, thereby biasing sampling toward larger numbers.
 
 ```{r}
 prob_vec      <- c( rep(x = 0.05, times = 5), rep(x = 0.15, times = 5) );
@@ -174,12 +180,12 @@ rand_num_bias <- sample(x = 1:10, size = 10, replace = TRUE, prob = prob_vec);
 print(rand_num_bias);
 ```
 
-Note that `rand_num_bias` above contains more high numbers than low numbers.
+Note that `rand_num_bias` above contains more numbers from 6-10 than from 1-5.
 
-This kind of sampling can be very useful. If, for example, we have a large data set and want to look at a random collection of rows, we can do it by inserting sampled values and telling R to print it. Consider the built-in R base data set `ChickWeight`, a table with data on the effect of diet on chick weights.
+This kind of sampling can be very useful. If, for example, we have a large data set and want to look at a random subset of rows, we can do it by inserting sampled values and telling R to print it. Consider the built-in R base data set `ChickWeight`, a table with data on the effect of diet on chick weights.
 
 ```{r}
-data("Chickweight")
+data("ChickWeight")
 head(ChickWeight);
 ```
 
@@ -193,7 +199,7 @@ print(ChickWeight[rand_rows,]);
 
 The above now shows a random collection of rows, including `r rownames(ChickWeight[rand_rows,])`.
 
-Finally, this kind of sampling does not need to be done only on numbers. Lists of characters can also be sampled using `sample`. We can take a look at this using the in-built data set `mtcars` in R, in which each row name is a different car. We can get the car names using the R function `rownames`, which will return a full list of all the cars in the data set.
+Finally, this kind of sampling does not need to be done only on subsets of numbers. Lists of characters can also be sampled using `sample`. We can take a look at this using the in-built data set `mtcars` in R, in which each row name is a different car. We can get the car names using the R function `rownames`, which will return a full list of all the cars in the data set.
 
 ```{r}
 data("mtcars");
@@ -209,7 +215,7 @@ cars_sampled <- sample(x = car_names, size = 2, replace = FALSE);
 print(cars_sampled);
 ```
 
-With this procedure, we have therefore sampled `r cars_sampled[1]` and `r cars_sampled[2]`. The types of structures `x` that can be sampled with `sample` are actually even broader than vectors and character lists, but for now I will move on to using `sample` for statistical hypothesis sampling.
+With this procedure, we have therefore sampled `r cars_sampled[1]` and `r cars_sampled[2]`. There are even more types of structures `x` that can be sampled with `sample`, but for now I will move on to using `sample` for statistical hypothesis sampling.
 
 
 <a name="rand_h">Randomisation for hypothesis testing</a>
@@ -228,17 +234,18 @@ library(knitr);
 kable(head(birds));
 ```
 
-Suppose we hypothesis that sparrows that survive will have a lower mass than sparrows that perish. If we want to do a simple test to see whether or not the body weight (`wgt`) of living sparrows is lower than that of dead sparrows, then we could use the base R function `t.test` as follows.
+Suppose we hypothesise surviving sparrows will have a lower mass than perishing sparrows. If we want to do a simple test to see whether or not the body mass (`wgt`) of living sparrows is lower than that of dead sparrows, then we could use the base R function `t.test` as follows.
 
 ```{r}
 bird_t_test <- t.test(birds[,5] ~ birds[,2], alternative = "less");
+print(bird_t_test);
 ```
 
-In the above, `birds[,5]` specifies the column of the response variable (sparrow weight) as a function of `birds[,2]` (`alive` versus `dead`). Specifying `alternative = "less"` indicates that our alternative hypothesis is that the true difference in the means is less than zero (i.e., $\mu_{alive} - \mu_{dead} < 0$). The difference between the estimated means is `r as.numeric(bird_t_test$estimate[1])` $-$ `r as.numeric(bird_t_test$estimate[2])` $=$ `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. As indicated from the p-value shown above, if we assume that the null hypothesis is true (i.e., sparrows that lived do *not* have less mass than sparrows that died), then the probability of getting a difference in mass this low or lower is `r bird_t_test$p.value`. 
+In the above, `birds[,5]` specifies the column of the response variable (sparrow mass) as a function of `birds[,2]` (`alive` versus `dead`). Specifying `alternative = "less"` indicates that our alternative hypothesis is that the true difference in the means is less than zero (i.e., $\mu_{alive} - \mu_{dead} < 0$). The difference between the estimated means is `r as.numeric(bird_t_test$estimate[1])` $-$ `r as.numeric(bird_t_test$estimate[2])` $=$ `r as.numeric(bird_t_test$estimate[1]) - as.numeric(bird_t_test$estimate[2])`. As indicated from the p-value shown above, if we assume that the null hypothesis is true (i.e., sparrows that lived do *not* have less mass than sparrows that died), then the probability of getting a difference in mass this low or lower is `r bird_t_test$p.value`. 
 
-The use of a simple t-test is sufficient for the above question; our data set is fairly large (`r sum(birds[,2] == "alive")` living sparrows and `r sum(birds[,2] == "dead")` dead sparrows), and there is no reason to believe the statistical assumptions of the t-test are being violated. Nevertheless, we can use resampling to test the same null hypothesis in a slightly different way, and one in which is not dependent upon the standard t-test assumptions (e.g., normality). Consider the null hypothesis again, that the true body mass of living sparrows is not less than the true body mass of dead sparrows In the t-test, we assume this null hypothesis and ask what is the probability of getting a value of $\hat\mu_{alive} - \hat\mu_{dead}$ as low as we did (note the hats above $\mu$ are used to indicate the observed *estimate* of the mean rather than the *true* mean). 
+The use of a t-test is sufficient for the above question; our data set is fairly large (`r sum(birds[,2] == "alive")` living sparrows and `r sum(birds[,2] == "dead")` dead sparrows), and there is no reason to believe the statistical assumptions of the t-test are being violated. Nevertheless, we can use resampling to test the same null hypothesis in a slightly different way -- a way that does not make the same standard t-test assumptions (e.g., normality). Consider the null hypothesis again, that the true body mass of living sparrows is not less than the true body mass of dead sparrows. In the t-test, we assume this null hypothesis and ask what is the probability of getting a value of $\hat\mu_{alive} - \hat\mu_{dead}$ as low as we did (note the hats above $\mu$ are used to indicate the observed *estimate* of the mean rather than the *true* mean). 
 
-**A different way to state the null hypothesis of the t-test is that *membership to the group 'alive' has no effect on whether or not the difference between 'alive' and 'dead' sparrows will be negative*.** In other words, we can randomly shuffle group membership and not expect the difference between $\hat\mu_{alive} - \hat\mu_{dead}$ to be much lower than the difference in the actual observed data set. If we shuffle group membership many times, we can generate a distribution of differences between living and dead sparow body masses that would be expected *if group membership were random* (i.e., if sparrow status as alive or dead were random with respect to body mass). We can then compare this distribution with the actual observed difference from the data set to test what the probability of getting such a low value of $\hat\mu_{alive} - \hat\mu_{dead}$ would be if group membership were random -- this comparison **is a p-value**, just derived in a different way with slightly different assumptions. It is, however, the probability of getting a value as extreme as the one observed *given that the null hypothesis is true*. Below is a simple example of how to recreate the null distribution and compare it to the observed difference between group means to get a p-value.
+**A different way to state the null hypothesis of the t-test is that *observed membership to the groups 'alive' versus 'dead' has no effect on whether or not the difference between 'alive' and 'dead' sparrow body mass is negative*.** In other words, we can randomly shuffle group membership and not expect the difference between $\hat\mu_{alive} - \hat\mu_{dead}$ to be much lower than the difference in the actual observed data set. If we shuffle group membership many times, we can generate a distribution of differences between living and dead sparow body masses that would be expected *if group membership were random* (i.e., if sparrow status as alive or dead were in fact random with respect to body mass). We can then compare this distribution with the actual observed difference from the data set to test what the probability of getting such a low value of $\hat\mu_{alive} - \hat\mu_{dead}$ would be if group membership were random -- this comparison **is a p-value**, just derived in a different way with slightly different assumptions. It is, however, the probability of getting a value as extreme as the one observed *given that the null hypothesis is true*. Below is a simple example of how to recreate the null distribution and compare it to the observed difference between group means to get a p-value.
 
 ```{r}
 iter    <- 9999;          # Total iterations (+1 for observed data = 10k)
@@ -256,7 +263,7 @@ for(i in 1:iter){
 
 Within the `for` loop above, what I have done is randomly shuffle the "alive" versus "dead" column from the `birds` data set. Hence, `bird_samp` is a vector of group membership that is random with respect to sparrow body mass in column 5 of `birds`. The `which` functions within the loop find which sparrows are randomly assigned to be "alive" and "dead". The following two lines get the mean values of body mass for each randomly generated group. And the last line within the `for` loop gets the difference between these means.
 
-Note that we could have equally well calculated a t-statistic, or even the median between groups, rather than group means [@Manly2007]. What matters is that we are comparing observed difference between groups with equivalent differences created from the randomly generated distribution. All the randomly generated values are now stored in `diff`, so we can plot them with a histogram to see the null distribution.
+We could equally well calculate a t-statistic within the loop, or even the difference between group medians, rather than the difference between group means [@Manly2007]. What matters is that we are comparing observed difference between groups with equivalent differences created from the randomly generated distribution. All of the randomly generated values are now stored in `diff`, so we can plot them with a histogram to see the null distribution.
 
 ```{r}
 xlabel <- expression( paste("Random group mean difference (", 
@@ -295,16 +302,16 @@ total_generated   <- length(diff) + 1;
 new_p_value       <- less_or_equal_obs / total_generated;
 ```
 
-Using the randomisation method, we get a value of $P =$ `r new_p_value`. Note that this p-value would change slightly if we were to re-run the analysis, but not by much if a the number of times we resample is sufficiently high. Also note that the p-value we obtained after randomisation is quite close to the value obtained from the standard t-test, which was `r bird_t_test$p.value`. Conceptually, the two tests are doing the same thing -- assuming that the mean value of one group is not less than the mean value of another group, and asking what the probability is of getting such a low difference in means would be if this assumption were in fact true. This was a very basic example of a randomisation test in R, but I hope that it illustrates how useful randomisation for hypothesis testing can be. Randomising is highly flexible, and allows researchers to test hypotheses that might be otherwise difficult to address due to stastical assumptions of standard tests or peculariarites of specific data sets. It is, of course, important to carefully consider what needs to be randomised for a particular question of interest to ensure that the appropriate null distribution is generated.
+Using the randomisation method, we get a value of $P =$ `r new_p_value`. Note that this p-value would change slightly if we were to re-run the analysis, but not by much if a the number of times we resample is sufficiently high[^1]. Also note that the p-value we obtained after randomisation is quite close to the value obtained from the standard t-test, which was `r bird_t_test$p.value`. Conceptually, the two tests are doing the same thing -- assuming that the mean value of one group is not less than the mean value of another group, and asking what the probability is of getting such a low difference in means would be if this assumption were in fact true. This was a very basic example of a randomisation test in R, but I hope that it illustrates how useful randomisation for hypothesis testing can be. Randomisation is a highly flexible tool, which allows researchers to test hypotheses that might be otherwise difficult to address due to restrictive stastical assumptions of standard tests or peculariarites of specific data sets. It is, of course, important to carefully consider what needs to be randomised for a particular question of interest to ensure that the appropriate null distribution is generated.
 
 <a name="rand_b">Bootstrapping confidence intervals</a>
 ================================================================================
 
-We can apply the randomisation to generating confidence intervals around some parameter value by resampling data with replacement. Recall the somewhat confusing frequentist definition of a confidence interval, that is an interval within which the parameter mean would be expected to be contained with some confidence if the population were repeatedly resampled. For example, for a 95\% confidence interval we would expect the mean to be observed within the lower and upper bounds 95\% of the time if we were to go out and re-sample from our population and re-calculate the interval bounds. Verbally, this is challenging to state, but the idea is well-reflected in the process of bootsrapping using resampling with replacement. The idea is that the distribution of values in the data represent the best information available on the distribution of the whole population of interest. Hence, to see what would happen if we were to re-sample from the whole population itself, we can sample with replacement from the collected data [@Manly2007]. 
+We can apply the randomisation method to generating confidence intervals around some parameter value by resampling data with replacement. Recall the somewhat confusing frequentist definition of a confidence interval, that is an interval within which the parameter mean would be expected to be contained with some confidence if the population were repeatedly resampled. For example, for a 95\% confidence interval we would expect the mean to be observed within the lower and upper bounds 95\% of the time if we were to go out and re-sample from our population and re-calculate the interval bounds. Verbally, this is challenging to state, but the idea is well-reflected in the process of bootsrapping using resampling with replacement. The idea is that the distribution of values in the data represent the best information available on the distribution of the whole population of interest. Hence, to see what would happen if we were to re-sample from the whole population itself, we can sample with replacement from the collected data [@Manly2007]. 
 
-To show a simple example of bootstrapping 95\% confidence intervals, I will again use the Bumpus data set. This time, however, I will focus on the whole data set of sparrows, not separating sparrows that are alive and those that are dead. The goal will be to generate 95\% bootstrapped confidence intervals for bird total length (`totlen`), which is found in column 3 of `birds`.
+To show a simple example of bootstrapping 95\% confidence intervals, I will again use the Bumpus data set. This time, however, I will focus on the whole data set of sparrows, not separating sparrows that are alive from those that are dead. The goal will be to generate 95\% bootstrapped confidence intervals for bird total length (`totlen`), which is found in column 3 of `birds`.
 
-The general idea will be to repeatedly resample a new column `totlen` from the already existing column of data, with replacement. In other words, with each resampling, we will make a new `totlen` column of the same length as the original `totlen`, but some of the values will be repeated while others will be ommitted due to the process of resampling with replacement. We then calculate the mean total sparrow length from the new column created by resampling. The standard deviation of the resampled means will estimate the standard error of the true mean, as if we were to have gone back out into the field and collected another set of sparrows and measured their lengths.
+The general idea will be to repeatedly resample a new column `totlen` from the already existing column of data, with replacement. In other words, with each resampling, we will make a new `totlen` column of the same length as the original `totlen`, but some of the values will be repeated while others will be ommitted due to the process of resampling with replacement. We then calculate the mean total sparrow length from the new column created by resampling. The standard deviation of the resampled means will estimate the standard error of the true mean, as if we were to have repeatedly gone back out into the field to collect multiple new sparrows and measured their lengths.
 
 ```{r}
 iter            <- 10000;
@@ -312,17 +319,16 @@ resampled_means <- NULL;
 N_birds         <- dim(birds)[1]; # Total number of birds
 for(i in 1:N_birds){
     resampled_totlen   <- sample(x = birds[,3], size = N_birds, replace = TRUE);
-    mean_resample      <- mean(resampled_totlen);
-    resampled_means[i] <- mean_resample;
+    resampled_means[i] <- mean(resampled_totlen);
 }
 sd_resampled_means <- sd(resampled_means);
 ```
 
-In the above loop, $`r iter`$ new data sets of `r N_birds` sparrow total lengths are generated with replacement to create `resampled_totlen`. The mean of these resampled sparrow total lengths is calculated and appended to `resampled_means`. Outside of the loop, the standard deviation of the `resampled_means` is calculated to be `r sd_resampled_means`. Again, this standard deviation estimates what the standard deviation of *estimated mean* values of sparrow total length would be if we were to go out and re-collect the same number of sparrows that Bumpus did. The standard deviation of means is, by definition, the standard error of the means, so we can use this standard deviation to calculate 95\% confidence intervals just as we would with the standard error of the original data. 
+In the above loop, $`r iter`$ new data sets of `r N_birds` sparrow lengths are generated with replacement to create `resampled_totlen`. The mean of these resampled sparrow total lengths is calculated and appended to `resampled_means`. Outside of the loop, the standard deviation of the `resampled_means` is calculated to be `r sd_resampled_means`. Again, this standard deviation estimates what the standard deviation of *estimated mean* values of sparrow length would be if we were to go out and re-collect the same number of sparrows that Bumpus did. The standard deviation of means is, by definition, a standard error, so we can use this standard deviation to calculate 95\% confidence intervals just as we would with the standard error of the original data. 
 
 $$\hat\mu_{len} - \sigma z_{\alpha/2} < \mu_{len} < \hat\mu_{len} - \sigma z_{\alpha/2}$$
 
-In the above, $\mu_{len}$ is the true mean total sparrow length, $\sigma$ is the standard deviation of the resampled means (`sd_resampled_means` in the code above), and $z_{\alpha/2}$ is the corresponding $z$ value from the standard normal distribution for which the probility exceeds $\alpha/2$ (for a 95\% confidence interval, this value is 1.96). Note again the hats above $\mu$ to differentiate the parameter estimate ($\hat\mu_{len}$) from the true parameter ($\mu_{len}$). We can then simply substitute $z_{\alpha/2} = 1.96$, $\sigma =$ `sd_resampled_means` $=$ `r sd_resampled_means`, and $\hat\mu_{len} =$ `mean(birds[,3])` $=$ `r mean(birds[,3])` to get the following 95\% confidence intervals.
+In the above, $\mu_{len}$ is the true mean total sparrow length, $\sigma$ is the standard deviation of the resampled means (`sd_resampled_means` in the code above), and $z_{\alpha/2}$ is the corresponding $z$ score from the standard normal distribution for which the probility exceeds $\alpha/2$ (for a 95\% confidence interval, this value is 1.96). Note again the hats above $\mu$ to differentiate the parameter estimate ($\hat\mu_{len}$) from the true parameter ($\mu_{len}$). We can then simply substitute $z_{\alpha/2} = 1.96$, $\sigma =$ `sd_resampled_means` $=$ `r sd_resampled_means`, and $\hat\mu_{len} =$ `mean(birds[,3])` $=$ `r mean(birds[,3])` to get the following 95\% confidence intervals.
 
 ```{r}
 lower_95CI <- mean(birds[,3]) - 1.96 * sd_resampled_means;
@@ -333,7 +339,7 @@ This results in an estimated mean total bird length of `r mean(birds[,3])` with 
 
 $$\hat\mu_{len} - \frac{\sigma}{\sqrt{n}} z_{\alpha/2} < \mu_{len} < \hat\mu_{len} - \frac{\sigma}{\sqrt{n}} z_{\alpha/2}$$
 
-In the above, all that has changed is the $\sigma / \sqrt{n}$, which now is defined as the standard deviation of the observed sparrow total lengths (i.e., *not* the standard deviation of the means of all lengths from resampling, as above), divided by the square root of the total number of sparrows observed (i.e., `N_birds` in the code above). This results in the confidence intervals calculated below.
+In the above, all that has changed is the $\sigma / \sqrt{n}$, which now is the standard deviation of the observed sparrow total lengths (i.e., *not* the standard deviation of the means of all lengths from resampling, as above), divided by the square root of the total number of sparrows observed (i.e., `N_birds` in the code above). This results in the confidence intervals calculated below.
 
 ```{r}
 lower_95CI_std <- mean(birds[,3]) - 1.96 * ( sd( birds[,3] / sqrt(N_birds) ) );
@@ -348,9 +354,9 @@ There are several different methods of using bootstrapping to generate confidenc
 <a name="rand_m">Monte Carlo method for spatial data</a>
 ================================================================================
 
-The previous two examples of [hypothesis testing](#rand_h) and [bootstrapping ](#rand_b) involved resampling from existing data sets to address a statistical question. Next, I will consider the case in which we address a null hypothesis whose distribution cannot be derived by sampling from the observed data. **The goal will be to test whether or not plants of one species are randomly distributed across a fixed sampling area.**
+The previous two examples of [hypothesis testing](#rand_h) and [bootstrapping ](#rand_b) involved resampling from existing data sets to address a statistical question. Next, I will consider the case in which we address a null hypothesis with a distribution that cannot be derived by sampling from the observed data. **The goal will be to test whether or not plants of one species are randomly distributed across a fixed sampling area.**
 
-The data set I will use includes locations of [Sonoran Desert rock fig](https://en.wikipedia.org/wiki/Ficus_petiolaris) trees (*Ficus petiolaris*) from a field site Baja, Mexico, which were mapped in the lab of [John Nason](https://www.eeob.iastate.edu/faculty/nason/). Fig trees have a fascinating ecology, with mutualistic and antagonistic interactions with accompanying species of obligately pollinating and parasitising [fig wasps](https://en.wikipedia.org/wiki/Fig_wasp). 
+The data set I will use includes locations of [Sonoran Desert rock fig](https://en.wikipedia.org/wiki/Ficus_petiolaris) trees (*Ficus petiolaris*) from a field site in Baja, Mexico. These trees were mapped in the lab of [John Nason](https://www.eeob.iastate.edu/faculty/nason/). Fig trees have a fascinating ecology, with mutualistic and antagonistic interactions with accompanying species of obligately pollinating and parasitising [fig wasps](https://en.wikipedia.org/wiki/Fig_wasp). 
 
 ![](images/fig_tree.jpg)
 
@@ -370,7 +376,7 @@ lon2 <- -113.1095;
 kable(head(fpet));
 ```
 
-We can plot the latitude and longitudes of each of the `r dim(fpet)[1]` trees below. The brown box shows the random study plot[^1] at the field site from latitude `r lat1` to `r lat2` and longitude `r lon1` to `r lon2`. 
+We can plot the latitude and longitude of each of the `r dim(fpet)[1]` trees below. The brown box shows the study plot at the field site, randomly set[^2] from latitude `r lat1` to `r lat2` and longitude `r lon1` to `r lon2`. 
 
 ```{r, fig.height = 7, fig.width = 7}
 lat1 <-  28.289;
@@ -386,9 +392,9 @@ polygon(x = c(lon1, lon1, lon2, lon2),  y = c(lat1, lat2, lat2, lat1),
 points(x = fpet[,4], y = fpet[,3], pch = 20);
 ```
 
-The focal question is whether or not these trees are randomly distributed within the brown box. This is not a question that can be answered by randomising the latitude and longitude coordinates of trees. What we need to do instead is compare the distribution of the trees above with that of trees as randomly placed latitude and longitude coordinates within the box. This is a job for a Monte Carlo test, which compares an observed test statistic with that derived from a theoretical null model [@Manly2007]. In this case, the test statistic we will use is distance to the nearest neighbour (i.e., for a focal *F. petiolaris* tree, how close the nearest conspecific). The null model that we will assume is a set of randomly sampled latitude and longitude coordinates within the fixed study area (note that we would normally want to translate the latitude and longitude coordinates to the [Universal Transverse Mercator (UTM)](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system) coordinate system for calculating distance between trees. I am skipping this step to avoid making things unnecessary complicated, and because it is not directly related to the logic of the Monte Carlo test).
+The focal question is whether or not these trees are randomly distributed within the brown box. This is not a question that can be answered by randomising the latitude and longitude coordinates of trees. What we need to do instead is compare the distribution of the trees above with that of trees with randomly placed latitude and longitude coordinates within the box. This is a job for a Monte Carlo test, which compares an observed test statistic with that derived from a theoretical null model [@Manly2007]. In this case, the test statistic we will use is distance to the nearest neighbour (i.e., for a focal *F. petiolaris* tree, how close the nearest conspecific). The null model that we will assume is a set of randomly sampled latitude and longitude coordinates within the fixed study area (note that we would normally want to translate the latitude and longitude coordinates to the [Universal Transverse Mercator (UTM)](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system) coordinate system for calculating distance between trees. I am skipping this step to avoid making things unnecessary complicated, and because it is not directly related to the logic of the Monte Carlo test).
 
-More formally, our null hypothesis will be that the mean nearest neighour distance for a focal tree in the observed data will not differ significantly from the mean nearest neighour distance obtained form the same number of trees randomly distributed within the sampling area (brown box). To test this null hypothesis, we can randomly place `r dim(fpet)[1]` trees on the sampling area and calculate the mean nearest neighbour distance for the randomly placed trees. If we repeat this procedure a large number of times, then we can build a null distribution of nearest neighbour distances for trees that are randomly placed within the study are (i.e., random latitude and longitude coordinates). First, we need to write a function that calculates the distance between two trees; the below will work (again, recognising that the coordinates should be translated to [UTM](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)).
+More formally, our null hypothesis will be that the mean nearest neighour distance for a focal tree in the observed data will not differ significantly from the mean nearest neighour distance obtained form the same number of trees randomly distributed within the sampling area (brown box). To test this null hypothesis, we can randomly place `r dim(fpet)[1]` trees on the sampling area and calculate the mean nearest neighbour distance for the randomly placed trees. If we repeat this procedure a large number of times, then we can build a null distribution of nearest neighbour distances for trees that are randomly placed within the study are (i.e., random latitude and longitude coordinates). First, we need to write a function that calculates the distance between two trees; the below will work (again, recognising that the coordinates should *realy* be translated to [UTM](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)).
 
 ```{r}
 get_mean_nearest_neighbour <- function(trees, lat = 3, lon = 4){
@@ -416,7 +422,7 @@ get_mean_nearest_neighbour <- function(trees, lat = 3, lon = 4){
 }
 ```
 
-The arguments `lat` and `lon` specify the column locations for latitude and longitude coordinates, respectively. The details of the function are not particularly important. I am just using it as a way to get some reasonable metric that can be calculated with the Monte Carlo test, which is shown with the code below. The idea of the code is to randomly sample numbers for tree latutides and longitudes within the defined study area (note the use of [`runif`](#runif) to do this). Given the random placement of these trees, the above function `get_mean_nearest_neighbour` returns the mean distance to the nearest neighbouring tree, calculated across all of the randomly placed trees. This mean nearest neighbour distance is then stored so that a null distribution can be built.
+The arguments `lat` and `lon` specify the column locations for latitude and longitude coordinates, respectively. The details of the function are not important. I am just using the function to get some reasonable metric that can be calculated with the Monte Carlo test, which is shown with the code below. The idea of the code is to randomly sample real numbers for tree latitudes and longitudes within the defined study area (note the use of [`runif`](#runif) to do this). Given the random placement of these trees, the above function `get_mean_nearest_neighbour` returns the mean distance to the nearest neighbouring tree, calculated across all of the randomly placed trees. This mean nearest neighbour distance is then stored so that a null distribution can be built.
 
 ```{r, eval = FALSE}
 iteration    <- 9999;
@@ -437,7 +443,7 @@ while(iteration > 0){
 iteration    <- 9999;
 ```
 
-In the code above, a while loop is used to find the mean nearest neighbour of randomly placed trees `r iteration` times. Within the loop, trees are randomly placed with [`runif`](#runif), and the same number of trees are placed as were observed in the actual observed data set; `min` and `max` values in `rnorm` reflect the boundaries of the sampling area. We can see what these randomly placed trees look like by plotting some of the iterations below.
+In the code above, a `while` loop is used to find the mean nearest neighbour of randomly placed trees `r iteration` times. Within the loop, trees are randomly placed with [`runif`](#runif), and the same number of trees are placed as were observed in the actual observed data set; `min` and `max` values in `rnorm` reflect the boundaries of the sampling area. We can see what these randomly placed trees look like by plotting some of the iterations below.
 
 ```{r, echo = FALSE, fig.height = 8, fig.width = 8}
 iteration    <- 16;
@@ -462,7 +468,7 @@ while(iteration > 0){
 }
 ```
 
-Below, the distribution of mean distance to the nearest neighbour is plotted for the `r iteration` randomly generated tree study areas. The arrow shows the actual observed mean distance between nearest neighbours, as calculated form the original data set.
+Below, the distribution of mean distance to the nearest neighbour is plotted for the 9999 randomly generated tree study areas. The arrow shows the actual observed mean distance between nearest neighbours, as calculated form the original data set.
 
 
 ```{r, echo = FALSE}
@@ -488,17 +494,15 @@ arrows(x0 = obs, x1 = obs, y0 = 500, y1 = 10, lwd = 3, length = 0.1);
 It appears, from the position of the mean tree nearest neighbour distance in the observed data, that the *F. petiolaris* trees are no more or less spatially aggregated than would be expected by chance.
 
 
-
-
-<a name="whatelse">Additional resources</a>
+<a name="conclusions">Conclusions</a>
 ================================================================================
 
-
+I hope that the above introduction has been helpful for showing some different kinds of statistical methods that are possible in R. For further reading on randomisation, bootstrap, and Monte Carlo methods, I recommend the text of @Manly2007. 
 
 
 References
 ================================================================================
 
+[^1]: It is *not* acceptable, of course, to re-run a randomisation analysis until acheiving some p-value that is below a desired threshold.
 
-
-[^1]: No, not really. The actual objective was not to randomly sample trees within a given area, but rather to map all of the trees that we could find for a variety of different purposes. But it is useful for illustration to pretend that we had instead sampled trees within a fixed area described by the brown box above.
+[^2]: No, not really. The actual objective was not to randomly sample trees within a given area, but rather to map all of the trees that we could find for a variety of different purposes. But it is useful for illustration to pretend that we had instead sampled trees within a fixed area described by the brown box above.
