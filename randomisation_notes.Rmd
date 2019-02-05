@@ -21,7 +21,7 @@ Contents
 - [Random number generation in R: key functions](#rand_r) 
     - [Random normal: `rnorm`](#rnorm)
     - [Random uniform: `runif`](#runif)
-    - [Random binomial: `runif`](#rbinom)
+    - [Random binomial: `rbinom`](#rbinom)
     - [Random poisson: `rpois`](#rpois)
     - [Random sampled values: `sample`](#sample)
 - [Randomisation for hypothesis testing](#rand_h)
@@ -34,11 +34,15 @@ Contents
 ================================================================================
 
 
+<a name="rand_r">Random number generation in R: key functions</a>
+================================================================================
+
+
 The objective of these notes is to help the reader get started with using randomisation, bootstrap, and Monte Carlo methods in R.
 
 <a name="rnorm">**Sampling from a normal distribution**</a>
 
-The `rnorm` function returns some number (`n`) of (pseudo)randomly generated numbers given a set mean ($\mu$; `mean`) and standard deviation ($\sigma$; `sd`), such that $X\sim\mathcal N(\mu,\sigma^2)$. The default is to draw from a standard normal distribution (i.e., $\mu = 0$ and $\sigma = 1$).
+The `rnorm` function returns some number (`n`) of (pseudo)randomly generated numbers given a set mean ($\mu$; `mean`) and standard deviation ($\sigma$; `sd`), such that $X\sim\mathcal N(\mu,\sigma^2)$. The default is to draw from a standard [normal (a.k.a., "Gaussian") distribution](https://en.wikipedia.org/wiki/Normal_distribution) (i.e., $\mu = 0$ and $\sigma = 1$).
 
 ```{r}
 rand_norms_10 <- rnorm(n = 10, mean = 0, sd = 1);
@@ -60,7 +64,7 @@ hist(rand_norms_10000, xlab = "Random value (X)", col = "grey",
 
 <a name="runif">**Sampling from a uniform distribution**</a>
 
-Like the `rnorm` function, the `runif` function returns some number (`n`) of random numbers, but from a uniform distribution with between a range of $a$ (`min`) and $b$ (`max`) such that $X\sim\mathcal U(a,b)$, where $-\infty < a < b < \infty$. The default is to draw from a standard uniform distribution (i.e., $a = 0$ and $b = 1$).
+Like the `rnorm` function, the `runif` function returns some number (`n`) of random numbers, but from a [uniform distribution](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) with between a range of $a$ (`min`) and $b$ (`max`) such that $X\sim\mathcal U(a,b)$, where $-\infty < a < b < \infty$. The default is to draw from a standard uniform distribution (i.e., $a = 0$ and $b = 1$).
 
 ```{r}
 rand_unifs_10 <- runif(n = 10, min = 0, max = 1);
@@ -82,16 +86,130 @@ hist(rand_unifs_10000, xlab = "Random value (X)", col = "grey",
 
 <a name="rbinom">**Sampling from a binomial distribution**</a>
 
+Like previous functions, the `rbinom` function returns some number (`n`) of random numbers, but the arguments and output can be slightly confusing at first. Recall that a [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution) describes the number of 'successes' for some number of independent trials ($\Pr(success) = p$). The `rbinom` function returns the number of successes after `size` trials, in which the probability of success in each trial is `prob`. For a concrete example, suppose we want to simulate the flipping of a fair coin 1000 times, and we want to know how many times that coin comes up heads ('success'). We can do this with the following code.
+
+```{r}
+coin_flips <- rbinom(n = 1, size = 1000, prob = 0.5);
+print(coin_flips);
+```
+
+The above result shows that the coin came up heads `r coin_flips` times. Note, however, the (required) argument `n` above. This allows the user to set the number of sequences to run. In other words, if we set `n = 2`, then this could simulate the flipping of a fair coin 1000 times once to see how many times heads comes up, then repeating the whole process to see how many times heads comes up again.
+
+```{r}
+coin_flips_2 <- rbinom(n = 2, size = 1000, prob = 0.5);
+print(coin_flips_2);
+```
+
+In the above, a fair coin was flipped 1000 times and returned `r coin_flips_2[1]` heads, and then another fair coin was flipped 1000 times and returned `r coin_flips_2[2]` heads. As with the `rnorm` and `runif` functions, we can check to see what the distribution of the binomial function looks like if we repeat this process. Suppose, in other words, that we want to see the distribution of times heads comes up after 1000 flips. We can, for example, simulate the process of flipping 1000 times in a row with 10000 different coins using the code below.
+
+```{r}
+coin_flips_10000 <- rbinom(n = 10000, size = 1000, prob = 0.5);
+```
+
+I have not printed the above `coin_flips_10000` for obvious reasons, but we can use a histogram to look at the results.
+
+```{r}
+hist(coin_flips_10000, xlab = "Random value (X)", col = "grey",
+     main = "", cex.lab = 1.5, cex.axis = 1.5);
+```
+
+As would be expected, most of the time 'heads' occurs around 500 times out of 1000, but usually the actual number will be a bit lower or higher due to chance. Note that if we want to simulate the results of individual flips in a single trial, we can do so as follows.
+
+```{r}
+flips_10 <- rbinom(n = 10, size = 1, prob = 0.5);
+```
+```{r, echo = FALSE}
+print(flips_10);
+```
+
+In the above, there are `n = 10` trials, but each trial consists of only a single coin flip (`size = 1`). But can equally well interpret the results as a series of `n` coin flips that come up either heads (`1`) or tails (`0`). This interpretation can be especially useful to write code that randomly decides whether some event will happen (`1`) or not (`0`) with some probability `prob`.
+
 
 <a name="rpois">**Sampling from a poisson distribution**</a>
 
+Many processes in biology can be described by a [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution). A Poisson process describes events happening with some given probability over an area of time or space such that $X\sim Poisson(\lambda)$, where the rate parameter $\lambda$ is both the mean and variance of the Poisson distribution (note $\lambda > 0$). Sampling from a Poisson distribution can be done in R with `rpois`, which takes only two arguments specifying the number of values to be returned (`n`) and the rate parameter (`lambda`).
+
+```{r}
+rand_poissons <- rpois(n = 10, lambda = 1);
+print(rand_poissons);
+```
+
+There are no default values for `rpois`. We can plot a histogram of a large number of values to see the distribution when $\lambda = 4$ below.
+
+
+```{r}
+rand_poissons_10000 <- rpois(n = 10000, lambda = 4);
+hist(rand_poissons_10000, xlab = "Random value (X)", col = "grey",
+     main = "", cex.lab = 1.5, cex.axis = 1.5);
+```
+
+
 <a name="sample">**Sampling values from a vector**</a>
 
+Sometimes it is useful to sample a set of values from a vector or list. The function `sample` is a very flexible function in R for sampling any group (`x`) of numbers or elements from some structure in R according to some set probabilities (`prob`). Elements can be sampled from `x` some number of times (`size`) with or without replacement (`replace`), though an error will be returned if the `size` of the sample is larger than `x` but `replace = FALSE` (default). To start out simple, suppose we want to ask R to pick a random number from one to ten with equal probability.
 
-<a name="rand_r">Random number generation in R: key functions</a>
-================================================================================
+```{r}
+rand_number_1 <- sample(x = 1:10, size = 1);
+```
+
+The above code will set `rand_number_1` to a randomly selected value, in this case `r rand_number_1`. Because we have not specified a probability vector `prob`, the function assumes that every element in `1:10` is sampled with equal probability. We can increase the size to `10` below.
+
+```{r}
+rand_number_10 <- sample(x = 1:10, size = 10);
+print(rand_number_10);
+```
+
+Note that all numbers from 1 to 10 have been sampled, though in a random order. This is becaues the default is to sample with replacement, meaning that once a number has been sampled for the first element in `rand_number_10`, it is no longer available to be sampled again. To change this and allow for sampling with replacement, we can change the default.
+
+```{r}
+rand_number_10_r <- sample(x = 1:10, size = 10, replace = TRUE);
+print(rand_number_10_r);
+```
+
+Note that the numbers {`r as.numeric(names(which(table(rand_number_10_r) > 1)))`} are now repeated in the set of randomly sampled values above. We can also specify the probability of sampling each element, with the obvious condition that these probabilities need to sum to 1. Below shows an example in which the numbers 1-5 are sampled with a probability of 0.05, while the numbers 6-10 are sampled with a probability of 0.15, thereby biasing sampling toward larger numbers.
+
+```{r}
+prob_vec      <- c( rep(x = 0.05, times = 5), rep(x = 0.15, times = 5) );
+rand_num_bias <- sample(x = 1:10, size = 10, replace = TRUE, prob = prob_vec);
+print(rand_num_bias);
+```
+
+Note that `rand_num_bias` above contains more high numbers than low numbers.
+
+This kind of sampling can be very useful. If, for example, we have a large data set and want to look at a random collection of rows, we can do it by inserting sampled values and telling R to print it. Consider the built-in R base data set `ChickWeight`, a table with data on the effect of diet on chick weights.
+
+```{r}
+data("Chickweight")
+head(ChickWeight);
+```
 
 
+The table continues on with `r dim(ChickWeight)[1]` rows of data. But suppose instead of wanting to see the first six rows (as returned from using `head` above), we instead want to see a random assortment of rows. We can use `sample` to ask for a random sample of 10 rows as follows (note that `dim(ChickWeight)[1]` returns the length of the first dimension -- i.e., the total number of rows).
+
+```{r}
+rand_rows <- sample(x = 1:dim(ChickWeight)[1], size = 10);
+print(ChickWeight[rand_rows,]);
+```
+
+The above now shows a random collection of rows, including `r rownames(ChickWeight[rand_rows,])`.
+
+Finally, this kind of sampling does not need to be done only on numbers. Lists of characters can also be sampled using `sample`. We can take a look at this using the in-built data set `mtcars` in R, in which each row name is a different car. We can get the car names using the R function `rownames`, which will return a full list of all the cars in the data set.
+
+```{r}
+data("mtcars");
+head(mtcars);
+car_names <- rownames(mtcars);
+print(car_names);
+```
+
+If we want to sample two of these cars, for whatever reason, we can use `sample` in the same way that we did when sampling numbers.
+
+```{r}
+cars_sampled <- sample(x = car_names, size = 2, replace = FALSE);
+print(cars_sampled);
+```
+
+With this procedure, we have therefore sampled `r cars_sampled[1]` and `r cars_sampled[2]`. The types of structures `x` that can be sampled with `sample` are actually even broader than vectors and character lists, but for now I will move on to using `sample` for statistical hypothesis sampling.
 
 
 <a name="rand_h">Randomisation for hypothesis testing</a>
