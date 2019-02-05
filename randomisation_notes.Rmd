@@ -350,7 +350,142 @@ There are several different methods of using bootstrapping to generate confidenc
 
 The previous two examples of [hypothesis testing](#rand_h) and [bootstrapping ](#rand_b) involved resampling from existing data sets to address a statistical question. Next, I will consider the case in which we address a null hypothesis whose distribution cannot be derived by sampling from the observed data. **The goal will be to test whether or not plants of one species are randomly distributed across a fixed sampling area.**
 
-The data set I will use includes locations of [Sonoran Desert rock fig](https://en.wikipedia.org/wiki/Ficus_petiolaris) trees (*Ficus petiolaris*) from a field site Baja, Mexico, which were mapped in the lab of [John Nason](https://www.eeob.iastate.edu/faculty/nason/). Fig trees have a fascinating ecology, with mutualistic and antagonistic interactions with accompanying species of obligately pollinating and parasitising [fig wasps](https://en.wikipedia.org/wiki/Fig_wasp). The locations of these fig trees were originally collected for a much different purpose from what I am using them for here, but they are useful for a simplified example of Monte Carlo methods as applied to spatial data.
+The data set I will use includes locations of [Sonoran Desert rock fig](https://en.wikipedia.org/wiki/Ficus_petiolaris) trees (*Ficus petiolaris*) from a field site Baja, Mexico, which were mapped in the lab of [John Nason](https://www.eeob.iastate.edu/faculty/nason/). Fig trees have a fascinating ecology, with mutualistic and antagonistic interactions with accompanying species of obligately pollinating and parasitising [fig wasps](https://en.wikipedia.org/wiki/Fig_wasp). 
+
+![](images/fig_tree.jpg)
+
+The locations of these fig trees were originally collected for a much different purpose from what I am using them for here, but they are useful for a simplified example of Monte Carlo methods as applied to spatial data. The data are available [on GitHub](https://github.com/StirlingCodingClub/randomisation/blob/master/data/FpetTrees.csv).
+
+```{r}
+fpet <- read.csv("data/FpetTrees.csv");
+```
+
+The first six rows are shown below.
+
+```{r, echo = FALSE}
+lat1 <-  28.289;
+lat2 <-  28.2918;
+lon1 <- -113.1145;
+lon2 <- -113.1095;
+kable(head(fpet));
+```
+
+We can plot the latitude and longitudes of each of the `r dim(fpet)[1]` trees below. The brown box shows the random study plot[^1] at the field site from latitude `r lat1` to `r lat2` and longitude `r lon1` to `r lon2`. 
+
+```{r, fig.height = 7, fig.width = 7}
+lat1 <-  28.289;
+lat2 <-  28.2918;
+lon1 <- -113.1145;
+lon2 <- -113.1095;
+plot(x = fpet[,4], y = fpet[,3], xlab = "Longitude", ylab = "Latitude",
+     pch = 20, cex.lab = 1.25, cex.axis = 1.25, 
+     xlim = c(lon1 - 0.001,  lon2 + 0.001), 
+     ylim = c(lat1 - 0.0005, lat2 + 0.0005));
+polygon(x = c(lon1, lon1, lon2, lon2),  y = c(lat1, lat2, lat2, lat1),
+        col = "tan");
+points(x = fpet[,4], y = fpet[,3], pch = 20);
+```
+
+The focal question is whether or not these trees are randomly distributed within the brown box. This is not a question that can be answered by randomising the latitude and longitude coordinates of trees. What we need to do instead is compare the distribution of the trees above with that of trees as randomly placed latitude and longitude coordinates within the box. This is a job for a Monte Carlo test, which compares an observed test statistic with that derived from a theoretical null model [@Manly2007]. In this case, the test statistic we will use is distance to the nearest neighbour (i.e., for a focal *F. petiolaris* tree, how close the nearest conspecific). The null model that we will assume is a set of randomly sampled latitude and longitude coordinates within the fixed study area (note that we would normally want to translate the latitude and longitude coordinates to the [Universal Transverse Mercator (UTM)](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system) coordinate system for calculating distance between trees. I am skipping this step to avoid making things unnecessary complicated, and because it is not directly related to the logic of the Monte Carlo test).
+
+More formally, our null hypothesis will be that the mean nearest neighour distance for a focal tree in the observed data will not differ significantly from the mean nearest neighour distance obtained form the same number of trees randomly distributed within the sampling area (brown box). To test this null hypothesis, we can randomly place `r dim(fpet)[1]` trees on the sampling area and calculate the mean nearest neighbour distance for the randomly placed trees. If we repeat this procedure a large number of times, then we can build a null distribution of nearest neighbour distances for trees that are randomly placed within the study are (i.e., random latitude and longitude coordinates). First, we need to write a function that calculates the distance between two trees; the below will work (again, recognising that the coordinates should be translated to [UTM](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)).
+
+```{r}
+get_mean_nearest_neighbour <- function(trees, lat = 3, lon = 4){
+    N_trees  <- dim(trees)[1];
+    tree_lat <- trees[,lat];
+    tree_lon <- trees[,lon];
+    nearests <- rep(x = NA, times = N_trees);
+    for(i in 1:N_trees){
+        nearest_neigh <- Inf;
+        for(j in 1:N_trees){
+            if(i != j){
+                diff_lat <- tree_lat[i] - tree_lat[j];
+                diff_lon <- tree_lat[i] - tree_lat[j];
+                sq_lat   <- diff_lat * diff_lat;
+                sq_lon   <- diff_lon * diff_lon;
+                neigh_d  <- sqrt(sq_lat + sq_lon);
+                if(neigh_d < nearest_neigh){
+                    nearest_neigh <- neigh_d;
+                }
+            }
+        }
+    nearests[i] <- nearest_neigh;
+    }
+    return(mean(nearests));
+}
+```
+
+The arguments `lat` and `lon` specify the column locations for latitude and longitude coordinates, respectively. The details of the function are not particularly important. I am just using it as a way to get some reasonable metric that can be calculated with the Monte Carlo test, which is shown with the code below. The idea of the code is to randomly sample numbers for tree latutides and longitudes within the defined study area (note the use of [`runif`](#runif) to do this). Given the random placement of these trees, the above function `get_mean_nearest_neighbour` returns the mean distance to the nearest neighbouring tree, calculated across all of the randomly placed trees. This mean nearest neighbour distance is then stored so that a null distribution can be built.
+
+```{r, eval = FALSE}
+iteration    <- 9999;
+N_trees      <- dim(fpet)[1];
+simulated_NN <- NULL;
+while(iteration > 0){
+    rand_lat  <- runif(n = N_trees, min = lat1, max = lat2);
+    rand_lon  <- runif(n = N_trees, min = lon1, max = lon2);
+    fpet[,3]  <- rand_lat;
+    fpet[,4]  <- rand_lon;
+    mean_NN   <- get_mean_nearest_neighbour(trees);
+    simulated_NN[iteration] <- mean_NN;
+    iteration <- iteration - 1;
+}
+```
+
+```{r, echo = FALSE}
+iteration    <- 9999;
+```
+
+In the code above, a while loop is used to find the mean nearest neighbour of randomly placed trees `r iteration` times. Within the loop, trees are randomly placed with [`runif`](#runif), and the same number of trees are placed as were observed in the actual observed data set; `min` and `max` values in `rnorm` reflect the boundaries of the sampling area. We can see what these randomly placed trees look like by plotting some of the iterations below.
+
+```{r, echo = FALSE, fig.height = 8, fig.width = 8}
+iteration    <- 16;
+N_trees      <- dim(fpet)[1];
+simulated_NN <- NULL;
+par(mfrow = c(4, 4), mar = c(0, 0, 0, 0));
+while(iteration > 0){
+    rand_lat  <- runif(n = N_trees, min = lat1, max = lat2);
+    rand_lon  <- runif(n = N_trees, min = lon1, max = lon2);
+    fpet[,3]  <- rand_lat;
+    fpet[,4]  <- rand_lon;
+    mean_NN   <- get_mean_nearest_neighbour(fpet);
+    simulated_NN[iteration] <- mean_NN;
+    plot(x = fpet[,4], y = fpet[,3], xlab = "", ylab = "",
+         pch = 20, cex.lab = 1.25, cex.axis = 1.25, xaxt = "n", yaxt = "n",
+         xlim = c(lon1 - 0.001,  lon2 + 0.001), 
+         ylim = c(lat1 - 0.0005, lat2 + 0.0005));
+    polygon(x = c(lon1, lon1, lon2, lon2),  y = c(lat1, lat2, lat2, lat1),
+            col = "tan");
+    points(x = fpet[,4], y = fpet[,3], pch = 20);
+    iteration <- iteration - 1;
+}
+```
+
+Below, the distribution of mean distance to the nearest neighbour is plotted for the `r iteration` randomly generated tree study areas. The arrow shows the actual observed mean distance between nearest neighbours, as calculated form the original data set.
+
+
+```{r, echo = FALSE}
+iteration    <- 9999;
+N_trees      <- dim(fpet)[1];
+simulated_NN <- NULL;
+while(iteration > 0){
+    rand_lat  <- runif(n = N_trees, min = lat1, max = lat2);
+    rand_lon  <- runif(n = N_trees, min = lon1, max = lon2);
+    fpet[,3]  <- rand_lat;
+    fpet[,4]  <- rand_lon;
+    mean_NN   <- get_mean_nearest_neighbour(fpet);
+    simulated_NN[iteration] <- mean_NN;
+    iteration <- iteration - 1;
+}
+hist(simulated_NN, xlab = "Mean tree nearest neighbour distance", 
+     col = "grey", main = "", cex.lab = 1.5, cex.axis = 1.5, breaks = 20);
+fpet <- read.csv("data/FpetTrees.csv");
+obs  <- get_mean_nearest_neighbour(fpet)
+arrows(x0 = obs, x1 = obs, y0 = 500, y1 = 10, lwd = 3, length = 0.1);
+```
+
+It appears, from the position of the mean tree nearest neighbour distance in the observed data, that the *F. petiolaris* trees are no more or less spatially aggregated than would be expected by chance.
 
 
 
@@ -364,3 +499,6 @@ The data set I will use includes locations of [Sonoran Desert rock fig](https://
 References
 ================================================================================
 
+
+
+[^1]: No, not really. The actual objective was not to randomly sample trees within a given area, but rather to map all of the trees that we could find for a variety of different purposes. But it is useful for illustration to pretend that we had instead sampled trees within a fixed area described by the brown box above.
