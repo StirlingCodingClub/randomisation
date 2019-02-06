@@ -28,6 +28,7 @@ Contents
 - [Bootstrapping confidence intervals](#rand_b)
 - [Monte Carlo method for spatial data](#rand_m)
 - [Conclusions](#conclusions)
+- [Practice problems](#practice)
 
 ********************************************************************************
 
@@ -498,6 +499,26 @@ It appears, from the position of the mean tree nearest neighbour distance in the
 ================================================================================
 
 I hope that the above introduction has been helpful for showing some different kinds of statistical methods that are possible in R. For further reading on randomisation, bootstrap, and Monte Carlo methods, I recommend the text of @Manly2007. 
+
+<a name="practice">Practice problems</a>
+================================================================================
+
+Below is a practice problem. **To see the answer**, click on the '**Details**' arrows to the left at the bottom of each question. Note that your answers might differ from mine -- there is more than one way to solve each problem!
+
+1. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
+
+```{r}
+data(mtcars);
+true_cor <- cor(mtcars[,1], mtcars[,6]);
+iters    <- 999;
+the_cors <- NULL;
+for(i in 1:iters){
+    samp_wt     <- sample(mtcars[,6], size = dim(mtcars)[1]);
+    the_cors[i] <- cor(mtcars[,1], samp_wt);
+}
+more_extr <- sum(abs(the_cors) >= abs(true_cor));
+p_val     <- (more_extr + 1) / (iters + 1);
+```
 
 
 References

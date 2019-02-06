@@ -218,7 +218,26 @@ $$P < \frac{0+1}{99999 + 1} = 0.00001.$$
 This is consistent with the value from `t.test`
 
 
+## Practice problems
+
+1. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
 
 
+<details>
 
+```{r}
+data(mtcars);
+true_cor <- cor(mtcars[,1], mtcars[,6]);
+iters    <- 999;
+the_cors <- NULL;
+for(i in 1:iters){
+    samp_wt     <- sample(mtcars[,6], size = dim(mtcars)[1]);
+    the_cors[i] <- cor(mtcars[,1], samp_wt);
+}
+more_extr <- sum(abs(the_cors) >= abs(true_cor));
+p_val     <- (more_extr + 1) / (iters + 1);
+```
 
+2. Using your own data, generate a 95\% confidence interval around some mean value.
+
+https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
