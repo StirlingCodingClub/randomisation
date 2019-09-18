@@ -29,6 +29,7 @@ Contents
 - [Monte Carlo method for spatial data](#rand_m)
 - [Conclusions](#conclusions)
 - [Practice problems](#practice)
+- [Appendix](#appendix)
 
 ********************************************************************************
 
@@ -505,7 +506,26 @@ I hope that the above introduction has been helpful for showing some different k
 
 Below is a practice problem. **To see the answer**, click on the '**Details**' arrows to the left at the bottom of each question. Note that your answers might differ from mine -- there is more than one way to solve each problem!
 
-1. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
+1. Generate a histogram of random numbers sampled from a gamma distribution with a shape parameter ($k$) of 2 and a scale parameter ($\theta$) of 3 using the `rgamma` function in base R. Then, create a histogram to visualise the distribution. Try different shape and scale parameters to see how the gamma distribution changes with different parameter combinations.
+
+```{r, eval = FALSE}
+rand_gams <- rgamma(n = 10000, shape = 2, scale = 3);
+hist(rand_gams, col = "grey", xlab = "Random gamma values");
+```
+
+2. Using the base R data set `trees`, calculate 95% confidence intervals for tree Girth, Height, and Volume. Note, to read in the data, type `data("trees")` in the console. You should then have the data table `trees`, with three columns and 31 rows. Feel free to use the functions in the [appendix](#appendix) to do the bootstrapping foward you. Try bootstrapping more than once with the same function to see what happens, and try comparing bootstrapping mean versus median confidence intervals.
+
+```{r, eval = FALSE}
+data(trees);
+Girth_mean_CIs  <- simpleboot(trees$Girth);
+Girth_medi_CIs  <- medianboot(trees$Girth);
+Height_mean_CIs <- simpleboot(trees$Height);
+Height_medi_CIs <- medianboot(trees$Height);
+Volume_mean_CIs <- simpleboot(trees$Volume);
+Volume_medi_CIs <- medianboot(trees$Volume);
+```
+
+3. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
 
 ```{r}
 data(mtcars);
@@ -520,6 +540,47 @@ more_extr <- sum(abs(the_cors) >= abs(true_cor));
 p_val     <- (more_extr + 1) / (iters + 1);
 ```
 
+
+<a name = "appendix">Appendix: Some bootstrap functions</a>
+================================================================================
+
+To use the functions `simpleboot` and `medianboot`, highlight the code below and read it into the console. The first function returns lower and upper 95% bootstrapped confidence intervals around the mean of a vector `freqs`. The second function returns lower and upper 95% bootstrapped confidence intervals around the median of a vector `freqs`.
+
+```{r}
+# A simple bootstrap function from Manly (2007 p. 46)
+simpleboot <- function(freqs, repli = 1000, alpha = 0.05){                    
+	vals  <- NULL;
+	i     <- 0;
+	while(i < repli){        
+		boot  <- sample(x = freqs, size = length(freqs), replace = TRUE); 
+		strap <- mean(boot);                      
+		vals  <- c(vals, strap);                 
+		i     <- i + 1;                             
+	}                                       
+	vals   <- sort(x = vals, decreasing = FALSE);         
+	lowCI  <- vals[round( (alpha * 0.5) * repli )];     
+	highCI <- vals[round( (1 - (alpha * 0.5) ) * repli )];  
+	CIs    <- c(lowCI, highCI);                     
+	return(CIs);                                       
+}
+
+# A simple bootstrap function for the median
+medianboot <- function(freqs, repli = 1000, alpha = 0.05){  
+	vals  <- NULL;    
+	i     <- 0;        
+	while(i < repli){           
+		boot  <- sample(x = freqs, size = length(freqs), replace = TRUE);  
+		strap <- median(boot);         
+		vals  <- c(vals, strap);    
+		i     <- i + 1;      
+	}                             
+	vals   <- sort(x = vals, decreasing = FALSE);     
+	lowCI  <- vals[round( (alpha * 0.5) * repli)];    
+	highCI <- vals[round( (1 - (alpha * 0.5) ) * repli)];      
+	CIs    <- c(lowCI, highCI);          
+	return(CIs);                   
+}                
+```
 
 References
 ================================================================================
