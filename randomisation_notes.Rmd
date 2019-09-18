@@ -1,7 +1,7 @@
 ---
 title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 author: "Brad Duthie"
-date: "6 Februrary 2019"
+date: "18 September 2019"
 output: 
     html_document:
         code_folding: show
@@ -506,7 +506,7 @@ I hope that the above introduction has been helpful for showing some different k
 
 Below is a practice problem. **To see the answer**, click on the '**Details**' arrows to the left at the bottom of each question. Note that your answers might differ from mine -- there is more than one way to solve each problem!
 
-1. Generate a histogram of random numbers sampled from a gamma distribution with a shape parameter ($k$) of 2 and a scale parameter ($\theta$) of 3 using the `rgamma` function in base R. Then, create a histogram to visualise the distribution. Try different shape and scale parameters to see how the gamma distribution changes with different parameter combinations.
+1. Generate a histogram of random numbers sampled from a gamma distribution with a shape parameter ($k$) of 2 and a scale parameter ($\theta$) of 3 using the `rgamma` function in base R. Try different shape and scale parameters to see how the gamma distribution changes with different parameter combinations.
 
 ```{r, eval = FALSE}
 rand_gams <- rgamma(n = 10000, shape = 2, scale = 3);
@@ -525,7 +525,7 @@ Volume_mean_CIs <- simpleboot(trees$Volume);
 Volume_medi_CIs <- medianboot(trees$Volume);
 ```
 
-3. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
+3. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`).
 
 ```{r}
 data(mtcars);
