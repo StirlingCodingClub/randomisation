@@ -2,7 +2,7 @@
 title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 subtitle: https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
 author: "Brad Duthie"
-date: "6 Februrary 2019"
+date: "18 September 2019"
 output:
   beamer_presentation:
     theme: "default"
@@ -107,6 +107,7 @@ hist(rand_poissons, xlab = "Random value (X)", col = "blue",
      main = "", cex.lab = 1.5, cex.axis = 1.5);
 ```
 
+<!--- Remove this slide for now.
 
 ## The availability of randomisation for statistical models
 
@@ -118,11 +119,13 @@ Computational speed greatly increased in the late 20$^{th}$ century
 Coding in R with randomisation \& resampling very useful
 
 - Custom analyses for non-standard statistical questions
-- Modelling biological systems accessible (e.g., IBMS) \pause
+- Modelling biological systems accessible (e.g., IBMS)
+
+--->
 
 ## The logic of randomisation for frequentist statistics
 
-**Logic of frequentist statistics becomes more intuitive when using randomisation and resampling methods**
+**Logic of frequentist statistics becomes more intuitive when using randomisation and resampling methods** \pause
 
 - **P-value**: For a particular statistical model, given that the null hypothesis is true, what is the probability of getting a statistic as or more extreme than the one observed? \pause
 
@@ -143,7 +146,7 @@ library(knitr)
 kable(dat[1:5,]);
 ```
 
-- Two species include versicolor and virginica
+- Two species include *Iris versicolor* and *I. virginica*
 - Want to know difference between sepal lengths is significant
 
 ## The basic idea: a t-test {.smaller}
@@ -220,8 +223,13 @@ This is consistent with the value from `t.test`
 
 ## Practice problems
 
-1. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
+1. Generate a histogram of random numbers sampled from a gamma distribution with a shape parameter ($k$) of 2 and a scale parameter ($\theta$) of 3 using the `rgamma` function in base R.
 
+2. Using the base R data set `trees`, calculate 95% confidence intervals for tree Girth, Height, and Volume. Note, to read in the data, type `data("trees")` in the console. You should then have the data table `trees`, with three columns and 31 rows ([appendix](https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html#appendix) in the [notes](https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html) has a bootstrap function).
+
+3. Using the base R data set `mtcars`, use a randomisation test to see if there is a significant correlation between car miles per gallon (`mpg`) and car weight (`wt`)
+
+\vspace{3mm}
 
 <details>
 
@@ -238,6 +246,6 @@ more_extr <- sum(abs(the_cors) >= abs(true_cor));
 p_val     <- (more_extr + 1) / (iters + 1);
 ```
 
-2. Using your own data, generate a 95\% confidence interval around some mean value.
+\hrule
 
-https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
+**Notes**: https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
