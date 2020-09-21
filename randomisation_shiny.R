@@ -41,8 +41,8 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   sp   <- c(rep("SO1", 10), rep("SO2", 14))
-  eg   <- c(50, 47, 48, 54, 54, 46, 50, 50, 52, 51,
-            44, 44, 46, 36, 51, 50, 36, 56, 58, 45, 49, 39, 54, 52);
+  eg   <- c(50, 52, 53, 54, 54, 49, 50, 50, 52, 51,
+            44, 44, 46, 36, 51, 50, 36, 45, 51, 45, 49, 39, 51, 43);
   wp   <- as.data.frame(cbind(sp, eg));
   difs <- tapply(X = eg, INDEX = sp, FUN = mean);
   df1  <- difs[1] - difs[2];
@@ -76,9 +76,9 @@ server <- function(input, output) {
     hist(M$data, main = "", xlab = "Random mean difference", cex.lab = 1.5, 
          cex.axis = 1.5, xlim = c(-8, 8), ylim = c(0, 20), breaks = breaks,
          col = "grey");
-    arrows(x0 = df1 + 0.5, x1 = df1 + 0.5 , y0 = 6, y1 = 1.5, 
+    arrows(x0 = df1, x1 = df1 , y0 = 6, y1 = 1.5, 
            length = 0.15, lwd = 4, col = "red")
-    text(x = df1 + 0.5, y = 6.5, labels = "Observed", cex = 1.5, col = "red")
+    text(x = df1 , y = 6.5, labels = "Observed", cex = 1.5, col = "red")
 
     answer <- paste("E[SO1] - E[SO2] = ", round(P$data, digits = 3))
     text(x = 0, y = 19.5, labels = answer, cex = 2.5)
