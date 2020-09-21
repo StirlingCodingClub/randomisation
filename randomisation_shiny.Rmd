@@ -1,0 +1,131 @@
+---
+title: "randomisation"
+author: "Brad Duthie"
+date: "21/09/2020"
+output: ioslides_presentation
+runtime: shiny
+---
+
+<style type="text/css">
+body p {
+  color: #000000;
+}
+ul {
+  color: black;
+}
+ol {
+  color: black;
+}
+a {
+    color: darkblue;
+    text-decoration: none
+}
+.fifty {
+   font-size: 50%;
+   }
+.seventy {
+   font-size: 70%;
+   }
+slides > slide.backdrop {
+  background: none !important;
+  background-color: white !important;
+}
+slides > slide.title-slide hgroup h1 {
+  color: black;
+}
+slides > slide.title-slide p {
+  color: black;
+}
+slides > slide.light > hgroup h2 {
+  color: black;
+}
+slides > slide.light > hgroup h1 {
+  color: black;
+}
+ul {
+  color: black;
+}
+ol {
+  color: black;
+}
+p {
+  color: black
+}
+h1, h2, h3, h4, h5, h6, h7, h8, p {
+    color: black;
+}
+.column-left{
+  float: left;
+  width: 67%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 33%;
+  text-align: right;
+}
+</style>
+
+
+<!----
+<style type="text/css">
+body p {
+  color: #000000;
+}
+</style>
+--->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## {.columns-2}
+
+{.column}
+
+```{r, echo=FALSE}
+inputPanel(
+  actionButton("go", "Randomise the data"),
+  actionButton("stop", "Reset")
+)
+```
+
+
+```{r, echo = FALSE, fig.height = 5}
+renderPlot({
+    hist(rnorm(100));
+})
+```
+
+<br>
+
+
+```{r, echo=FALSE}
+renderTable({
+    matrix(data = rnorm(20), ncol = 2);
+})
+```
+
+
+
+
+##
+
+This is regular text spanning the whole page. But here comes a two-column section.
+
+:::::: {.columns}
+::: {.column width="48%" data-latex="{0.48\textwidth}"}
+This text is in the left column.
+:::
+::: {.column width="4%" data-latex="{0.04\textwidth}"}
+\ 
+<!-- an empty Div (with a white space), serving as
+a column separator -->
+:::
+:::::: {.column width="48%" data-latex="{0.48\textwidth}"}
+This text is in the right column.
+:::
+::::::
+\newline
+
+And back to a regular single-column environment.
