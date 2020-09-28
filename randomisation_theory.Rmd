@@ -1,0 +1,339 @@
+---
+title: "The logic of randomisation methods in statistics"
+author: "Brad Duthie"
+output:
+  beamer_presentation:
+    theme: "default"
+    colortheme: "default"
+    fonttheme: "default"
+  ioslides_presentation: default
+  slidy_presentation: default
+header-includes:
+- \usepackage{hyperref}
+- \usepackage{caption}
+- \usepackage{booktabs}
+- \definecolor{links}{HTML}{2A1B81}
+- \hypersetup{colorlinks,linkcolor=,urlcolor=links}
+colorlinks: true
+linkcolor: blue
+urlcolor: blue
+---
+
+
+## Two probability models
+
+```{r, echo = FALSE}
+library(knitr);
+opts_chunk$set(echo = FALSE);
+```
+
+\LARGE
+
+\begin{enumerate}
+\item General idea of the key concept
+\item Step by step example demonstrating the process
+\item Related methods and tests
+\end{enumerate}
+
+## Assumptions on which statistical inference is made [1]
+
+\normalsize
+
+
+::: columns
+
+:::: column
+
+\underline{\textbf{Population model}}\vspace{2mm}
+\begin{itemize}
+\item Assumes random sampling from population
+\item Assumes population distribution
+\item Compares test statistic to distribution (e.g., $t$, $F$)
+\item Can generalise to population of interest
+\end{itemize} \pause
+
+::::
+
+:::: column
+
+\underline{\textbf{Randomisation model}}\vspace{2mm}
+\begin{itemize}
+\item Does not assume random sampling form population
+\item No assumption of population distribution
+\item Randomises data to build a null distribution 
+\item Statistical inference limited to sample$^{*}$ \pause 
+\end{itemize}
+
+::::
+
+:::
+
+\vspace{3mm}
+
+*Note that we can generalise verbally [1, 2].
+
+
+\footnotetext[1]{Ernst, M D. 2004. \textit{Stat. Sci.} \href{https://doi.org/10.1214/088342304000000396}{19:676-685}.}
+\footnotetext[2]{Ludbrook, J, \& H Dudley. 1998. \textit{Am. Stat.}, \href{https://www.jstor.org/stable/2685470}{52:127-132}.}
+\footnotetext[3]{Manly, B F J. 2007. \textit{Randomization, Bootstrap and Monte Carlo Methods in Biology} (3rd ed.). Chapman \& Hall/CRC.}
+
+
+## The general idea of the randomisation approach
+
+
+\begin{enumerate}
+\item Randomly and repeatedly shuffle data in some way to generate a null distribution that is neutral with respect to our test statistic. \pause
+\item Compare the observed test statistic with the null distribution of test statistics generated in step 1. \pause
+\item Determine the \textit{probability of observing a test statistic at least as extreme as the one we actually observed given the null distribution.}
+\end{enumerate}
+
+
+\footnotetext[1]{Ernst, M D. 2004. \textit{Stat. Sci.} \href{https://doi.org/10.1214/088342304000000396}{19:676-685}.}
+\footnotetext[2]{Manly, B F J. 2007. \textit{Randomization, Bootstrap and Monte Carlo Methods in Biology} (3rd ed.). Chapman \& Hall/CRC.}
+
+
+## Empirical data from fig-fig wasp associations
+
+```{r, out.width = "100%", echo = FALSE}
+include_graphics("images/fig_tree.jpg");
+```
+
+Figs sampled from *Ficus petiolaris* in Baja, Mexico
+
+
+## Do SO1 and SO2 fig wasps differ in ovipositor length?
+
+```{r, out.width = "100%", echo = FALSE}
+include_graphics("images/fig_wasps.jpg");
+```
+
+Cryptic species of *Idarnes* non-pollinating fig wasps
+
+\footnotetext[1]{Duthie, A B, et al. 2015. \textit{Am. Nat.} \href{http://bradduthie.github.io/DuthieEtAl2015.pdf}{186:151-158}.}
+
+
+
+## Ovipositor measurements for SO1 and SO2
+
+
+```{r, echo = FALSE}
+dat <- read.csv("data/wing_loadings.csv", sep = "\t");
+SO1 <- dat[dat[,1] == "SO1", c(1, 11)];
+SO2 <- dat[dat[,1] == "SO2", c(1, 11)];
+rownames(SO1) <- NULL;
+rownames(SO2) <- NULL;
+colnames(SO1) <- c("Species", "Ovipositor (mm)");
+colnames(SO2) <- c("Species", "Ovipositor (mm)");
+```
+
+\footnotesize
+
+::: columns
+
+:::: column
+
+
+```{r, echo = FALSE}
+kable(SO1);
+```
+
+::::
+
+:::: column
+
+```{r, echo = FALSE}
+kable(SO2);
+```
+
+::::
+
+:::
+
+\footnotetext[1]{Duthie, A B, et al. 2015. \textit{Am. Nat.} \href{http://bradduthie.github.io/DuthieEtAl2015.pdf}{186:151-158}.}
+
+\normalsize
+
+
+
+## Measurement data for two fig wasp species
+
+::: columns
+
+:::: column
+
+\textbf{Summary statistics for SO1}
+\hrule\vspace{4mm}
+
+```{r}
+summary(SO1["Ovipositor (mm)"]);
+```
+
+$$\hat{\sigma}_{SO1} = `r sd(SO1[,2])`$$
+
+::::
+
+:::: column
+
+\textbf{Summary statistics for SO2}
+\hrule\vspace{4mm}
+
+```{r}
+summary(SO2["Ovipositor (mm)"]);
+```
+
+$$\hat{\sigma}_{SO2} = `r sd(SO2[,2])`$$
+
+::::
+
+:::
+
+\vspace{10mm}
+
+\textbf{Null hypothesis that ovipositor length does not differ with respect to species ($\mathbf{H_{0}: E[SO1] = E[SO2]}$)}
+
+\footnotetext[1]{Duthie, A B, et al. 2015. \textit{Am. Nat.} \href{http://bradduthie.github.io/DuthieEtAl2015.pdf}{186:151-158}.}
+
+
+
+
+## Calculating a p-value from randomised data
+
+
+The difference between mean ovipositor lengths was:
+
+$$E[SO1] - E[SO2] = `r mean(SO1[,2]) - mean(SO2[,2])`$$
+
+\vspace{8mm}\pause
+
+Assume that you randomly shuffle group identity (i.e., SO1 \& SO2) and recalculate the difference between means 9999 times, finding that 19 random resuffles are as or more extreme (i.e., larger absolute value) than the observed difference. \textbf{How do you calculate a p-value?}\pause
+
+
+
+$$\hat{P} = \frac{19+1}{9999 + 1} = 0.002.$$
+
+## Randomisation not restricted to categorical variables
+
+\scriptsize
+
+::: columns
+
+:::: column
+
+
+```{r, echo = FALSE}
+SO1c <- dat[dat[,1] == "SO1", c(1, 11, 15)];
+colnames(SO1c) <- c("Species", "Ovipositor (mm)", "Wing (mm)");
+rownames(SO1c) <- NULL;
+kable(SO1c);
+```
+
+::::
+
+:::: column
+
+\vspace{20mm}
+
+```{r, echo = FALSE}
+par(mar = c(5, 5, 1, 1));
+plot(SO1c[,2], SO1c[,3], xlab = "Ovipositor length (mm)", pch = 20,
+     ylab = "Wing length (mm)", cex.axis = 1.5, cex.lab = 2.75, cex = 2.5);
+```
+
+
+::::
+
+:::
+
+\vspace{2mm}
+\normalsize
+
+Compare estimated r = `r round(cor(SO1c[,2], SO1c[,3]), digits = 3)` with null distribution by randomly shuffling ovipositor length
+
+
+
+## Null distribution not restricted to existing data
+
+
+\scriptsize
+
+::: columns
+
+:::: column
+
+
+```{r, echo = FALSE}
+fpet <- read.csv("data/FpetTrees.csv");
+fpet <- fpet[1:18,]
+fptt <- fpet[,2:4];
+kable(fptt);
+```
+
+
+::::
+
+:::: column
+
+\vspace{20mm}
+
+```{r, echo = FALSE}
+par(mar = c(5, 5, 1, 1));
+plot(x = fpet[,4], y = fpet[,3], xlab = "Longitude", 
+     ylab = "Latitude", cex = 2.5,
+     pch = 20, cex.lab = 2.5, cex.axis = 1.25)
+smpsze <- paste("N =", dim(fpet)[1]);
+text(x = -113.1103, y = 28.2915, labels = smpsze, cex = 2.5);
+```
+
+
+::::
+
+:::
+
+\vspace{2mm}
+\normalsize
+
+Compare estimated n$^{th}$ nearest neighbour with null distribution by placing `r dim(fpet)[1]` trees in new locations.
+
+
+
+## Assumptions on which statistical inference is made [1]
+
+\normalsize
+
+
+::: columns
+
+:::: column
+
+\underline{\textbf{Population model}}\vspace{2mm}
+\begin{itemize}
+\item Assumes random sampling from population
+\item Assumes population distribution
+\item Compares test statistic to distribution (e.g., $t$, $F$)
+\item Can generalise to population of interest
+\end{itemize}
+
+::::
+
+:::: column
+
+\underline{\textbf{Randomisation model}}\vspace{2mm}
+\begin{itemize}
+\item Does not assume random sampling form population
+\item No assumption of population distribution
+\item Randomises data to build a null distribution 
+\item Statistical inference limited to sample$^{*}$ 
+\end{itemize}
+
+::::
+
+:::
+
+\vspace{3mm}
+
+*Note that we can generalise verbally [1, 2].
+
+
+\footnotetext[1]{Ernst, M D. 2004. \textit{Stat. Sci.} \href{https://doi.org/10.1214/088342304000000396}{19:676-685}.}
+\footnotetext[2]{Ludbrook, J, \& H Dudley. 1998. \textit{Am. Stat.}, \href{https://www.jstor.org/stable/2685470}{52:127-132}.}
+\footnotetext[3]{Manly, B F J. 2007. \textit{Randomization, Bootstrap and Monte Carlo Methods in Biology} (3rd ed.). Chapman \& Hall/CRC.}
