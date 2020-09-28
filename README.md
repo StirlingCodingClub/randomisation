@@ -6,7 +6,7 @@ These are the files which Brad will use during the session to explain these tech
 
 `randomisation.R` is an example script.
 
-`randomisation_notes.html` has comprehensive details which aim to help get you started.
+`randomisation_notes.html` has comprehensive details which aim to help get you started. View the notes in your browser here: https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
 
 `randomisation_slides.pdf` is the presentation which compliments those notes.
 
