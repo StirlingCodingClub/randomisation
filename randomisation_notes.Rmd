@@ -1,7 +1,7 @@
 ---
 title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 author: "Brad Duthie"
-date: "30 September 2020"
+date: "24 March 2022"
 output: 
     html_document:
         code_folding: show

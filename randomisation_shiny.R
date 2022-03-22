@@ -81,16 +81,16 @@ server <- function(input, output) {
     arrows(x0 = df1, x1 = df1 , y0 = 6, y1 = 1.5, 
            length = 0.15, lwd = 4, col = "red")
     text(x = df1 , y = 6.5, labels = "Observed", cex = 1.5, col = "red")
-
-    answer <- paste("E[SO1] - E[SO2] = ", round(P$data, digits = 3), "mm")
-    text(x = 0, y = 19.5, labels = answer, cex = 2.5)
+# bquote("(" * bar(x) * " = " * .(x) * ", " *  bar(y) * " = " * .(y) * ")")
+    answer <- paste("Mean(SO1) - Mean(SO2) = ", round(P$data, digits = 3), "mm")
+    text(x = 0, y = 19.5, labels = answer, cex = 2)
     hist(df1, main = "", xlab = "Random mean difference", cex.lab = 1.5, 
          cex.axis = 1.5, xlim = c(-8, 8), ylim = c(0, 10), breaks = breaks,
          add = TRUE, col = "red");
   }, height = 700)
 
   output$tt <- DT::renderDataTable({
-    
+    options(DT.options = list(pageLength = 32));
     wp   <- data.frame(Species = W$data[,1], Ovipositor = W$data[,2])
     ddd  <- datatable(wp)
     formatStyle(ddd, "Species", 
@@ -98,7 +98,7 @@ server <- function(input, output) {
                                               c("#E69F00", "#56B4E9")
                 ),
                 fontWeight = 'bold',
-                pageLength = 50
+                pageLength = 50, 
     )
   })
 
