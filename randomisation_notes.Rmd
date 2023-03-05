@@ -1,7 +1,7 @@
 ---
 title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 author: "Brad Duthie"
-date: "24 March 2022"
+date: "8 March 2023"
 output: 
     html_document:
         code_folding: show
@@ -13,7 +13,7 @@ Contents
 
 ********************************************************************************
 
-**Note: Please think of this document as a living document, which you are free to improve (like a [wiki](https://en.wikipedia.org/wiki/Wiki)) with minor edits, new sections that others might find useful, or [additional resources](#whatelse) that you find that you think others might also find useful. After reading through this, you will have been introduced to some key statistical techniques in randomisation and Monte Carlo methods that can be coded in R.**
+**These notes focus on randomisation approaches to statistical hypothesis testing. After reading through this, you will have been introduced to some key statistical techniques in randomisation and Monte Carlo methods that can be coded in R.**
 
 ********************************************************************************
 
