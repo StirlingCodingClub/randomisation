@@ -2,12 +2,12 @@
 title: "The logic of randomisation methods in statistics"
 author: "Brad Duthie"
 output:
+  slidy_presentation: default
   ioslides_presentation: default
   beamer_presentation:
     theme: "default"
     colortheme: "default"
     fonttheme: "default"
-  slidy_presentation: default
 header-includes:
 - \usepackage{hyperref}
 - \usepackage{caption}

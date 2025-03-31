@@ -1,3 +1,38 @@
+birds <- read.csv("data/Bumpus_data.csv");
+bird_t_test <- t.test(wgt ~ surv, data = birds, alternative = "less");
+
+
+iter    <- 9999;          # Total iterations (+1 for observed data = 10k)
+diff    <- NULL;          # To add difference between groups
+N_birds <- dim(birds)[1]; # Total number of birds
+for(i in 1:iter){   
+  bird_samp   <- sample(x = birds[,2], size = N_birds, replace = FALSE);
+  samp_alive  <- which(bird_samp == "alive");
+  samp_dead   <- which(bird_samp == "dead");
+  mn_samp_a   <- mean(birds[samp_alive, 5]);
+  mn_samp_d   <- mean(birds[samp_dead, 5]);
+  diff[i]     <- mn_samp_a - mn_samp_d;
+}
+
+obs_alive <- which(birds[,2] == "alive");
+obs_dead  <- which(birds[,2] == "dead");
+obs_diff  <- mean(birds[obs_alive,5]) - mean(birds[obs_dead,5]); 
+
+less_or_equal_obs <- sum(diff <= obs_diff) + 1;
+total_generated   <- length(diff) + 1;
+new_p_value       <- less_or_equal_obs / total_generated;
+
+
+
+
+
+
+
+
+
+
+
+
 # Read in the data
 full_data <- read.csv("data/wing_loadings.csv");
 # Just get the SO1 and SO2 species of interest
