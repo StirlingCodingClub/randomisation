@@ -2,7 +2,7 @@
 title: "Introduction to randomisation, bootstrap, and Monte Carlo methods in R"
 subtitle: https://stirlingcodingclub.github.io/randomisation/randomisation_notes.html
 author: "Brad Duthie"
-date: "18 September 2019"
+date: "01 April 2025"
 output:
   beamer_presentation:
     theme: "default"
@@ -135,15 +135,18 @@ Coding in R with randomisation \& resampling very useful
     
 ## The basic idea: a t-test 
 
-```{r, echo = TRUE}
+```{r, echo = FALSE}
 data(iris); # Remove one of the three species below 
 dat <- iris[iris[,5] != "setosa",];
 dat <- dat[,c(1, 5)]; # Remove unneeded columns
+ror <- sample(1:dim(dat)[1], size = dim(dat)[1]);
 ```
 
 ```{r, echo = FALSE}
 library(knitr)
-kable(dat[1:5,]);
+temp_dat <- dat[ror[1:10],];
+row.names(temp_dat) <- NULL;
+kable(temp_dat);
 ```
 
 - Two species include *Iris versicolor* and *I. virginica*
@@ -160,9 +163,9 @@ t.test(dat[,1] ~ dat[,2], alternative = "two.sided");
 
 **A different way to state the null hypothesis**: *Species identity does not have any effect on the mean difference between sepal lengths*
 
-1. If we randomly assign species to sepal lengths, then calculate the difference between species means, the size of this difference is due to chance
-2. If we repeat step 1 many times, we can generate a null distribution of differences between species means (i.e., what magnitudes of differences between sepal lengths are expected by chance)
-3. We can compare the *actual observed* difference between species mean sepal lengths to the null distribution generated in step 2.
+1. If we randomly assign species to sepal lengths, then calculate the difference between species means, the size of this difference is due to chance \pause
+2. If we repeat step 1 many times, we can generate a null distribution of differences between species means (i.e., what magnitudes of differences between sepal lengths are expected by chance) \pause
+3. We can compare the *actual observed* difference between species mean sepal lengths to the null distribution generated in step 2. \pause
 
 Proportion of differences that are as extreme or more extreme than the *actual observed* difference in the null distribution **is a p-value**.
 
